@@ -1,6 +1,6 @@
 {
-  "name": "Tactica PWA",
-  "short_name": "Tactica",
+  "name": "Táctica",
+  "short_name": "Táctica",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#06152C",
