@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tactica-cache-v2';
+const CACHE_NAME = 'tactica-cache-v1.5';
 const urlsToCache = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', event => {
