@@ -1,0 +1,15 @@
+{
+  "name": "Táctica Abogados",
+  "short_name": "Táctica",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0D1B2A",
+  "theme_color": "#0D1B2A",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3439/3439472.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
