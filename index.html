@@ -6,10 +6,14 @@
   <title>Táctica Abogados | Gestión</title>
   
   <meta name="theme-color" content="#0D1B2A">
-  <meta name="mobile-web-app-capable" content="yes"> <meta name="apple-mobile-web-app-capable" content="yes"> <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-  
-  <link rel="apple-touch-icon" href="logold.png"> <link rel="icon" type="image/png" sizes="192x192" href="logold.png"> <link rel="icon" type="image/png" sizes="32x32" href="logold.png"> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="apple-touch-icon" href="logold.png">
+  <link rel="icon" type="image/png" href="logold.png">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   
@@ -44,16 +48,9 @@
     }
 
     .btn-logout {
-        background: transparent;
-        border: 1px solid rgba(255,255,255,0.3);
-        color: rgba(255,255,255,0.8);
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 4px;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 4px;
+        background: transparent; border: 1px solid rgba(255,255,255,0.3);
+        color: rgba(255,255,255,0.8); font-size: 0.7rem; padding: 2px 8px;
+        border-radius: 4px; display: flex; align-items: center; gap: 4px;
     }
     .btn-logout:hover { border-color: var(--gold); color: var(--gold); }
     
@@ -66,7 +63,7 @@
     <img src="logold.png" class="logo-splash" alt="Logo Táctica">
     <h3 class="fw-bold mb-1">TÁCTICA ABOGADOS</h3>
     <p class="mb-4 opacity-75">Gestión de expedientes</p>
-    <button class="btn btn-lg btn-outline-light px-5" onclick="iniciarSesion()" style="border-radius: 30px;">INGRESAR AL SISTEMA</button>
+    <button class="btn btn-lg btn-outline-light px-5" onclick="window.iniciarSesion()" style="border-radius: 30px;">INGRESAR AL SISTEMA</button>
 </div>
 
 <div id="loading-overlay">
@@ -78,7 +75,7 @@
   <div class="container d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center gap-3">
         <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN INTERNA</div>
-        <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="cerrarSesion()">
+        <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="window.cerrarSesion()">
             <span class="material-symbols-outlined" style="font-size: 14px;">logout</span> Salir
         </button>
     </div>
@@ -154,27 +151,32 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  const CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com'; 
-  const SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
-  let tokenClient, accessToken, rawData = [];
+  // VARIABLES GLOBALES
+  window.CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com'; 
+  window.SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
+  window.tokenClient = null;
+  window.accessToken = null;
+  window.rawData = [];
 
-  function normalizar(texto) {
+  // NORMALIZACIÓN DE TEXTO (FUZZY SEARCH)
+  window.normalizar = function(texto) {
       if (!texto) return "";
       return texto.toString().toLowerCase()
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-z0-9]/g, "");
-  }
+  };
 
-  function initGis() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
+  // INICIALIZACIÓN GIS
+  window.initGis = function() {
+    window.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: window.CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/spreadsheets',
         callback: (tokenResponse) => {
             if (tokenResponse.access_token) {
-                accessToken = tokenResponse.access_token;
-                localStorage.setItem('tactica_token', accessToken);
+                window.accessToken = tokenResponse.access_token;
+                localStorage.setItem('tactica_token', window.accessToken);
                 localStorage.setItem('tactica_expiry', Date.now() + 3500000);
-                entrarApp();
+                window.entrarApp();
             }
         },
     });
@@ -182,47 +184,53 @@
     const savedToken = localStorage.getItem('tactica_token');
     const expiry = localStorage.getItem('tactica_expiry');
     if (savedToken && Date.now() < expiry) {
-        accessToken = savedToken;
-        entrarApp();
+        window.accessToken = savedToken;
+        window.entrarApp();
     }
-  }
+  };
 
-  function entrarApp() {
+  window.iniciarSesion = function() {
+    if (window.tokenClient) {
+        window.tokenClient.requestAccessToken();
+    } else {
+        alert("Cargando conexión con Google...");
+    }
+  };
+
+  window.cerrarSesion = function() {
+      localStorage.clear();
+      location.reload();
+  };
+
+  window.entrarApp = function() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('search-bar').style.display = 'block';
     document.getElementById('btn-logout-nav').style.display = 'flex';
-    consultarDatos();
-  }
+    window.consultarDatos();
+  };
 
-  function iniciarSesion() { tokenClient.requestAccessToken(); }
-
-  function cerrarSesion() {
-      localStorage.clear();
-      location.reload();
-  }
-
-  async function consultarDatos() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
+  window.consultarDatos = async function() {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!A:Z`;
     try {
-        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + window.accessToken } });
         const data = await response.json();
         if (data.values) {
-            rawData = data.values;
-            poblarCiudades();
-            renderCards(rawData.slice(1));
+            window.rawData = data.values;
+            window.poblarCiudades();
+            window.renderCards(window.rawData.slice(1));
         } else if (data.error && data.error.status === "UNAUTHENTICATED") {
-            cerrarSesion();
+            window.cerrarSesion();
         }
     } catch (e) { console.error(e); }
-  }
+  };
 
-  function poblarCiudades() {
-    const ciudades = [...new Set(rawData.slice(1).map(f => f[13]))].filter(Boolean);
+  window.poblarCiudades = function() {
+    const ciudades = [...new Set(window.rawData.slice(1).map(f => f[13]))].filter(Boolean);
     const dl = document.getElementById('ciudades-list');
     if(dl) dl.innerHTML = ciudades.map(c => `<option value="${c}">`).join('');
-  }
+  };
 
-  function toggleFiltro(tipo) {
+  window.toggleFiltro = function(tipo) {
       const isChecked = document.getElementById(`check-${tipo}`).checked;
       document.getElementById(`box-${tipo}`).style.display = isChecked ? 'block' : 'none';
       if (!isChecked) {
@@ -233,11 +241,99 @@
               document.getElementById('input-ciudad').value = '';
           }
       }
-      aplicarFiltros();
-  }
+      window.aplicarFiltros();
+  };
 
-  function aplicarFiltros() {
-    const termGlobal = normalizar(document.getElementById('global-search').value);
+  window.aplicarFiltros = function() {
+    const termGlobal = window.normalizar(document.getElementById('global-search').value);
     const checkCliente = document.getElementById('check-cliente').checked;
-    const termCliente = normalizar(document.getElementById('input-cliente').value);
-    const checkOrgano
+    const termCliente = window.normalizar(document.getElementById('input-cliente').value);
+    const checkOrgano = document.getElementById('check-organo').checked;
+    const fueroSel = document.querySelector('input[name="fuero"]:checked')?.value;
+    const termCiudad = window.normalizar(document.getElementById('input-ciudad').value);
+
+    const filtrados = window.rawData.slice(1).filter(f => {
+        const matchGlobal = !termGlobal || f.some(c => window.normalizar(c).includes(termGlobal));
+        let matchCliente = true;
+        if (checkCliente && termCliente) matchCliente = window.normalizar(f[4]).includes(termCliente);
+        let matchOrgano = true;
+        if (checkOrgano) {
+            const matchFuero = !fueroSel || window.normalizar(f[14]) === window.normalizar(fueroSel);
+            const matchCiu = !termCiudad || window.normalizar(f[13]).includes(termCiudad);
+            matchOrgano = matchFuero && matchCiu;
+        }
+        return matchGlobal && matchCliente && matchOrgano;
+    });
+    window.renderCards(filtrados);
+  };
+
+  window.resetearBusquedas = function() {
+      document.getElementById('global-search').value = '';
+      document.getElementById('check-cliente').checked = false;
+      document.getElementById('check-organo').checked = false;
+      window.toggleFiltro('cliente');
+      window.toggleFiltro('organo');
+      window.aplicarFiltros();
+  };
+
+  window.renderCards = function(filas) {
+    const contenedor = document.getElementById('lista-expedientes');
+    contenedor.innerHTML = '';
+    filas.forEach((f) => {
+        const realIndex = window.rawData.findIndex(r => r[1] === f[1]);
+        contenedor.innerHTML += `
+            <div class="card card-exp">
+                <div class="d-flex justify-content-between">
+                    <div class="small text-muted fw-bold">EXP: ${f[1] || '---'}</div>
+                    <button class="btn-edit" onclick="window.abrirEditor(${realIndex})">
+                        <span class="material-symbols-outlined">edit_note</span>
+                    </button>
+                </div>
+                <div class="h6 fw-bold text-navy my-2">${f[5] || ''} vs ${f[6] || ''}</div>
+                <div class="small text-secondary mb-2">${f[3] || ''}</div>
+                <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-1">
+                    ${f[11] || 'Sin novedades.'}
+                </div>
+                <div class="text-end" style="font-size: 0.65rem; color: var(--gold);">Rev: ${f[21] || '---'}</div>
+            </div>`;
+    });
+  };
+
+  const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
+  window.abrirEditor = function(index) {
+    const fila = window.rawData[index];
+    document.getElementById('edit-row-index').value = index + 1;
+    document.getElementById('edit-obs').value = fila[11] || '';
+    modalEdit.show();
+  };
+
+  window.guardarCambios = async function() {
+    const rowIndex = document.getElementById('edit-row-index').value;
+    const nuevaObs = document.getElementById('edit-obs').value;
+    const fecha = new Date().toLocaleString();
+    document.getElementById('loading-overlay').style.display = 'block';
+
+    try {
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT', headers: { 'Authorization': 'Bearer ' + window.accessToken },
+            body: JSON.stringify({ values: [[nuevaObs]] })
+        });
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT', headers: { 'Authorization': 'Bearer ' + window.accessToken },
+            body: JSON.stringify({ values: [[fecha]] })
+        });
+        modalEdit.hide();
+        window.resetearBusquedas();
+        window.consultarDatos();
+    } catch (e) { alert("Error al guardar"); }
+    document.getElementById('loading-overlay').style.display = 'none';
+  };
+
+  if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+<script src="https://accounts.google.com/gsi/client" onload="window.initGis()"></script>
+</body>
+</html>
