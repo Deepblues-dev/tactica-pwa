@@ -3,8 +3,8 @@
   "short_name": "Tactica",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#0D1B2A",
-  "theme_color": "#0D1B2A",
+  "background_color": "#04152E",
+  "theme_color": "#04152E",
   "icons": [
     {
       "src": "icon-192.png",
