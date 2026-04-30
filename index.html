@@ -1,114 +1,265 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Táctica Abogados | Gestión</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0D1B2A">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --navy: #0D1B2A; --gold: #C5A059; }
-        body { background-color: #F4F7F6; font-family: 'Inter', sans-serif; color: var(--navy); margin: 0; }
-        .navbar-tactica { background: var(--navy); border-bottom: 3px solid var(--gold); padding: 1rem; }
-        .btn-gold { background: var(--gold); color: white; border: none; font-weight: 700; padding: 8px 20px; border-radius: 8px; }
-        .card-legal { border: none; border-left: 5px solid var(--gold); border-radius: 12px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 1rem; padding: 1.2rem; }
-        .text-gold { color: var(--gold) !important; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Táctica Abogados | Gestión</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0D1B2A">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <style>
+    :root {
+      --navy: #0D1B2A;
+      --gold: #C5A059;
+      --white: #FFFFFF;
+      --light-gray: #F8F9FA;
+    }
+
+    body { background-color: var(--light-gray); font-family: 'Inter', sans-serif; padding-bottom: 50px; }
+    
+    /* Navbar Original */
+    .nav-app { 
+      background: var(--navy); 
+      color: var(--white); 
+      padding: 15px 0; 
+      border-bottom: 3px solid var(--gold); 
+    }
+    
+    .logo-container img { height: 60px; width: auto; display: block; margin: 0 auto; }
+
+    /* Estilos de Filtros */
+    .filter-section { background: var(--white); padding: 15px; border-bottom: 1px solid #ddd; margin-bottom: 20px; }
+    .btn-outline-navy { border: 1px solid var(--navy); color: var(--navy); }
+    .btn-outline-navy.active { background: var(--navy); color: white; }
+
+    /* Tarjetas Estilo Original */
+    .card-exp { 
+      border: none; border-top: 4px solid var(--gold); 
+      border-radius: 8px; background: var(--white);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px;
+      transition: all 0.2s ease;
+    }
+    .card-exp:active { transform: scale(0.98); }
+    .exp-header { font-size: 0.8rem; color: #666; font-weight: 600; }
+    .exp-title { color: var(--navy); font-weight: 700; font-size: 1.05rem; margin: 5px 0; }
+    .exp-detail { font-size: 0.85rem; color: #444; display: flex; align-items: center; gap: 5px; }
+
+    /* Botón de Ingreso */
+    .btn-login-fix {
+        background: var(--gold);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 5px 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    #loading-overlay {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+  </style>
 </head>
 <body>
 
-<nav class="navbar-tactica d-flex justify-content-between align-items-center shadow">
-    <div style="color: white; font-weight: 700; letter-spacing: 1px;">TÁCTICA ABOGADOS</div>
-    <button id="login_btn" class="btn-gold" onclick="iniciarSesion()">INGRESAR</button>
+<nav class="nav-app shadow-sm">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="logo-container">
+      <span class="fw-bold text-white">TÁCTICA ABOGADOS</span>
+    </div>
+    <button id="login_btn" class="btn-login-fix" onclick="iniciarSesion()">INGRESAR</button>
+  </div>
 </nav>
 
-<div class="container mt-4">
+<div class="filter-section shadow-sm" id="seccion-filtros" style="display: none;">
+  <div class="container">
+    <div class="d-flex gap-2 overflow-auto pb-2 mb-3">
+        <button class="btn btn-sm btn-outline-navy active" onclick="showF('exp')">Expediente</button>
+        <button class="btn btn-sm btn-outline-navy" onclick="showF('cliente')">Cliente</button>
+        <button class="btn btn-sm btn-outline-navy" onclick="showF('fuero')">Lugar/Fuero</button>
+    </div>
+
+    <div id="f-exp" class="filter-input">
+        <input type="text" id="txt-exp" class="form-control" placeholder="Buscar por número de expediente..." onkeyup="aplicarFiltro('exp')">
+    </div>
+
+    <div id="f-cliente" class="filter-input" style="display:none;">
+        <select id="sel-cliente" class="form-select" onchange="aplicarFiltro('cliente')">
+            <option value="">Seleccione Cliente...</option>
+        </select>
+    </div>
+
+    <div id="f-fuero" class="filter-input" style="display:none;">
+        <div class="row g-2">
+            <div class="col-6">
+                <select id="sel-fuero" class="form-select" onchange="updateLugar()">
+                    <option value="">Fuero...</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <select id="sel-lugar" class="form-select" onchange="updateJuzgado()">
+                    <option value="">Lugar...</option>
+                </select>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div class="container mt-3">
+    <div id="loading-overlay">
+        <div class="spinner-border text-warning" role="status"></div>
+        <p class="mt-2 text-muted">Sincronizando expedientes...</p>
+    </div>
+    
     <div id="lista-expedientes">
         <div class="text-center p-5 text-muted">
-            <p>SISTEMA DE GESTIÓN DE EXPEDIENTES</p>
-            <p class="small">Presione ingresar para ver la base de datos.</p>
+            <span class="material-symbols-outlined" style="font-size: 48px;">lock</span>
+            <p class="mt-2">Acceso restringido a personal de la firma.</p>
         </div>
     </div>
 </div>
 
 <script>
-    // 1. DEFINIR VARIABLES GLOBALES PRIMERO
-    window.CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com';
-    window.SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
-    window.tokenClient = null;
+  // CONFIGURACIÓN (Tus IDs actuales)
+  window.CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com';
+  window.SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
+  window.tokenClient = null;
+  window.rawData = []; // Aquí guardaremos los datos de Sheets
 
-    // 2. FUNCIÓN DE INICIALIZACIÓN (Hacerla global explícitamente)
-    window.initGis = function() {
-        console.log("Intentando inicializar Google GIS...");
-        try {
-            window.tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: window.CLIENT_ID,
-                scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
-                callback: (tokenResponse) => {
-                    if (tokenResponse.access_token) {
-                        consultarDatos(tokenResponse.access_token);
-                    }
-                },
-            });
-            console.log("Google GIS cargado con éxito.");
-        } catch (err) {
-            console.error("Error cargando Google GIS:", err);
-        }
-    };
-
-    // 3. FUNCIÓN DE LOGIN
-    function iniciarSesion() {
-        if (window.tokenClient) {
-            window.tokenClient.requestAccessToken();
-        } else {
-            alert("El servicio de Google aún no está listo. Espere 2 segundos y reintente.");
-        }
-    }
-
-    // 4. CONSULTA A SHEETS
-    async function consultarDatos(token) {
-        const contenedor = document.getElementById('lista-expedientes');
-        contenedor.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-warning"></div><p>Sincronizando...</p></div>';
-        
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!A:Z`;
-        
-        try {
-            const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
-            const data = await response.json();
-            if (data.values) {
-                renderizar(data.values);
-            } else {
-                contenedor.innerHTML = '<div class="alert alert-warning">No hay datos en la hoja DB.</div>';
-            }
-        } catch (error) {
-            contenedor.innerHTML = '<div class="alert alert-danger">Error al conectar con la hoja de cálculo.</div>';
-        }
-    }
-
-    // 5. MOSTRAR DATOS
-    function renderizar(filas) {
-        const contenedor = document.getElementById('lista-expedientes');
-        contenedor.innerHTML = '';
-        filas.slice(1).forEach(fila => {
-            if(!fila[1]) return;
-            contenedor.innerHTML += `
-                <div class="card card-legal">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="badge bg-light text-dark border">EXP: ${fila[1]}</span>
-                        <span class="small text-gold fw-bold">${fila[21] || ''}</span>
-                    </div>
-                    <div class="h6 mb-1 fw-bold">${fila[5] || ''} vs ${fila[6] || ''}</div>
-                    <div class="small text-secondary">${fila[3] || 'Juzgado no definido'}</div>
-                </div>`;
+  // --- LÓGICA DE AUTENTICACIÓN ---
+  window.initGis = function() {
+    try {
+        window.tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: window.CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+            callback: (tokenResponse) => {
+                if (tokenResponse.access_token) {
+                    consultarDatos(tokenResponse.access_token);
+                }
+            },
         });
-        document.getElementById('login_btn').innerText = "CONECTADO";
-        document.getElementById('login_btn').disabled = true;
+    } catch (err) { console.error("Error GIS:", err); }
+  };
+
+  function iniciarSesion() {
+    if (window.tokenClient) window.tokenClient.requestAccessToken();
+  }
+
+  // --- LÓGICA DE DATOS ---
+  async function consultarDatos(token) {
+    document.getElementById('loading-overlay').style.display = 'block';
+    document.getElementById('lista-expedientes').style.display = 'none';
+    
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!A:Z`;
+    
+    try {
+        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await response.json();
+        if (data.values) {
+            window.rawData = data.values;
+            document.getElementById('seccion-filtros').style.display = 'block';
+            document.getElementById('login_btn').innerText = "CONECTADO";
+            document.getElementById('login_btn').disabled = true;
+            
+            // Inicializar filtros con los datos reales
+            poblarFiltros();
+            renderCards(window.rawData.slice(1));
+        }
+    } catch (error) { console.error(error); }
+    
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('lista-expedientes').style.display = 'block';
+  }
+
+  // --- LÓGICA DE INTERFAZ ORIGINAL (Filtros y Tarjetas) ---
+  
+  function poblarFiltros() {
+    const data = window.rawData.slice(1);
+    
+    // Clientes (Columna E -> index 4)
+    const clientes = [...new Set(data.map(r => r[4]))].filter(Boolean).sort();
+    const selC = document.getElementById('sel-cliente');
+    clientes.forEach(c => selC.add(new Option(c, c)));
+
+    // Fueros (Columna O -> index 14)
+    const fueros = [...new Set(data.map(r => r[14]))].filter(Boolean).sort();
+    const selF = document.getElementById('sel-fuero');
+    fueros.forEach(f => selF.add(new Option(f, f)));
+  }
+
+  function showF(tipo) {
+    document.querySelectorAll('.filter-input').forEach(div => div.style.display = 'none');
+    document.querySelectorAll('.btn-outline-navy').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('f-' + tipo).style.display = 'block';
+    event.currentTarget.classList.add('active');
+  }
+
+  function aplicarFiltro(tipo) {
+    let filtrados = window.rawData.slice(1);
+    
+    if(tipo === 'exp') {
+        const val = document.getElementById('txt-exp').value.toLowerCase();
+        filtrados = filtrados.filter(r => r[1] && r[1].toString().toLowerCase().includes(val));
+    } else if(tipo === 'cliente') {
+        const val = document.getElementById('sel-cliente').value;
+        if(val) filtrados = filtrados.filter(r => r[4] === val);
     }
+    renderCards(filtrados);
+  }
+
+  function renderCards(filas) {
+    const contenedor = document.getElementById('lista-expedientes');
+    contenedor.innerHTML = '';
+    
+    filas.forEach(f => {
+        contenedor.innerHTML += `
+            <div class="card card-exp p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="exp-header">EXP: ${f[1] || '---'}</div>
+                    <div class="badge bg-light text-dark border" style="font-size:0.7rem">${f[21] || ''}</div>
+                </div>
+                <div class="exp-title">${f[5] || 'Sin Actor'} vs ${f[6] || 'Sin Demandado'}</div>
+                <div class="exp-detail mb-1">
+                    <span class="material-symbols-outlined" style="font-size:16px; color:var(--gold)">balance</span>
+                    ${f[3] || 'Juzgado no definido'}
+                </div>
+                <div class="exp-detail">
+                    <span class="material-symbols-outlined" style="font-size:16px; color:var(--gold)">person</span>
+                    Cliente: ${f[4] || '---'}
+                </div>
+            </div>`;
+    });
+  }
+
+  // Funciones de Cascada para Fuero/Lugar (Simplificadas)
+  function updateLugar() {
+    const fuero = document.getElementById('sel-fuero').value;
+    const lugares = [...new Set(window.rawData.slice(1).filter(r => r[14] === fuero).map(r => r[13]))].filter(Boolean).sort();
+    const selL = document.getElementById('sel-lugar');
+    selL.innerHTML = '<option value="">Lugar...</option>';
+    lugares.forEach(l => selL.add(new Option(l, l)));
+    aplicarFiltroCascada();
+  }
+
+  function updateJuzgado() { aplicarFiltroCascada(); }
+
+  function aplicarFiltroCascada() {
+    const f = document.getElementById('sel-fuero').value;
+    const l = document.getElementById('sel-lugar').value;
+    let filt = window.rawData.slice(1);
+    if(f) filt = filt.filter(r => r[14] === f);
+    if(l) filt = filt.filter(r => r[13] === l);
+    renderCards(filt);
+  }
 </script>
 
 <script src="https://accounts.google.com/gsi/client" onload="initGis()"></script>
-
 </body>
 </html>
