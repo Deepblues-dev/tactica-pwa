@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Táctica Abogados | Gestión</title>
-<meta name="theme-color" content="#0D1B2A">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="logo.png">  
+  <meta name="theme-color" content="#0D1B2A">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.png">  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -25,8 +25,7 @@
     .nav-app { background: var(--navy); color: var(--white); padding: 8px 0; border-bottom: 3px solid var(--gold); }
     .logo-img { height: 45px; width: auto; object-fit: contain; }
     
-    /* Ajuste de espacio en Splash */
-    .logo-splash { height: 120px; width: auto; margin-bottom: 5px; } /* Reducido de 20px a 5px */
+    .logo-splash { height: 120px; width: auto; margin-bottom: 5px; } 
 
     .search-section { background: white; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; }
     
@@ -36,10 +35,27 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; padding: 15px;
     }
     .btn-edit { color: var(--gold); cursor: pointer; border: none; background: none; }
-    
-    /* Filtros avanzados */
-    .filter-options { font-size: 0.85rem; margin-top: 10px; }
-    .sub-filter { padding-left: 20px; margin-top: 5px; display: none; }
+
+    .filter-options { font-size: 0.85rem; margin-top: 10px; color: #444; }
+    .sub-filter-box { 
+        display: none; padding: 10px; margin-top: 10px; 
+        background: #f1f3f5; border-radius: 8px; 
+    }
+
+    /* Botón Logout */
+    .btn-logout {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.3);
+        color: rgba(255,255,255,0.8);
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .btn-logout:hover { border-color: var(--gold); color: var(--gold); }
     
     #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:2000; padding-top:200px; text-align:center; }
   </style>
@@ -60,260 +76,4 @@
 
 <nav class="nav-app shadow-sm">
   <div class="container d-flex justify-content-between align-items-center">
-    <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN INTERNA</div>
-    <img src="logo.png" class="logo-img" alt="Logo">
-  </div>
-</nav>
-
-<div class="search-section shadow-sm" id="search-bar" style="display:none;">
-    <div class="container">
-        <div class="input-group">
-            <span class="input-group-text bg-white border-end-0"><span class="material-symbols-outlined text-muted">search</span></span>
-            <input type="text" id="global-search" class="form-control border-start-0" placeholder="Búsqueda global..." onkeyup="ejecutarBusqueda()">
-            <button class="btn btn-outline-secondary border-start-0" type="button" onclick="resetearBusquedas()" title="Limpiar búsqueda">
-                <span class="material-symbols-outlined" style="vertical-align: middle;">refresh</span>
-            </button>
-        </div>
-
-        <div class="filter-options d-flex gap-3 flex-wrap">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="check-cliente" onchange="toggleSubFiltro('cliente')">
-                <label class="form-check-label" for="check-cliente">Por Cliente</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="check-organo" onchange="toggleSubFiltro('organo')">
-                <label class="form-check-label" for="check-organo">Órgano Jurisdiccional</label>
-            </div>
-        </div>
-
-        <div id="sub-cliente" class="sub-filter">
-            <input type="text" id="filter-cliente" class="form-control form-control-sm" placeholder="Nombre del cliente..." onkeyup="ejecutarBusqueda()">
-        </div>
-
-        <div id="sub-organo" class="sub-filter">
-            <div class="btn-group btn-group-sm mb-2" role="group">
-                <input type="radio" class="btn-check" name="fuero" id="fuero-federal" value="Federal" onchange="ejecutarBusqueda()">
-                <label class="btn btn-outline-navy" for="fuero-federal">Federal</label>
-                <input type="radio" class="btn-check" name="fuero" id="fuero-local" value="Local" onchange="ejecutarBusqueda()">
-                <label class="btn btn-outline-navy" for="fuero-local">Local</label>
-            </div>
-            <input type="text" id="filter-ciudad" class="form-control form-control-sm" placeholder="Ciudad o Distrito Judicial..." list="lista-ciudades" onkeyup="ejecutarBusqueda()">
-            <datalist id="lista-ciudades"></datalist>
-        </div>
-    </div>
-</div>
-
-<div class="container mt-3">
-    <div id="lista-expedientes"></div>
-</div>
-
-<div class="modal fade" id="modalEditar" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-dark text-white" style="border-bottom: 2px solid var(--gold);">
-        <h5 class="modal-title">Actualizar Expediente</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="resetearBusquedas()"></button>
-      </div>
-      <div class="modal-body">
-        <form id="form-edicion">
-            <input type="hidden" id="edit-row-index">
-            <div class="mb-3">
-                <label class="form-label small fw-bold">AVANCE / ESTADO PROCESAL</label>
-                <textarea id="edit-obs" class="form-control" rows="5"></textarea>
-            </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="resetearBusquedas()">Cerrar</button>
-        <button type="button" class="btn btn-dark" onclick="guardarCambios()" style="background: var(--navy);">Guardar en Sheets</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  const CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com'; 
-  const SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
-  let tokenClient, accessToken, rawData = [];
-
-  // Función para normalizar texto (Quitar acentos, mayúsculas y símbolos)
-  function normalizar(texto) {
-      if (!texto) return "";
-      return texto.toString().toLowerCase()
-          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]/g, "");
-  }
-
-  function initGis() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets',
-        callback: (tokenResponse) => {
-            if (tokenResponse.access_token) {
-                accessToken = tokenResponse.access_token;
-                // PERSISTENCIA: Guardar token
-                localStorage.setItem('tactica_token', accessToken);
-                localStorage.setItem('tactica_token_time', Date.now());
-                
-                document.getElementById('splash-screen').style.display = 'none';
-                document.getElementById('search-bar').style.display = 'block';
-                consultarDatos();
-            }
-        },
-    });
-
-    // Validar si existe sesión previa
-    const savedToken = localStorage.getItem('tactica_token');
-    const savedTime = localStorage.getItem('tactica_token_time');
-    // Si el token tiene menos de 50 min (Google tokens duran 60 min)
-    if (savedToken && (Date.now() - savedTime < 3000000)) {
-        accessToken = savedToken;
-        document.getElementById('splash-screen').style.display = 'none';
-        document.getElementById('search-bar').style.display = 'block';
-        consultarDatos();
-    }
-  }
-
-  function iniciarSesion() { tokenClient.requestAccessToken(); }
-
-  async function consultarDatos() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
-    try {
-        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
-        const data = await response.json();
-        if (data.values) {
-            rawData = data.values;
-            poblarDatalist();
-            renderCards(rawData.slice(1));
-        } else if (data.error && data.error.status === "UNAUTHENTICATED") {
-            localStorage.clear();
-            location.reload();
-        }
-    } catch (e) { console.error(e); }
-  }
-
-  function poblarDatalist() {
-      const ciudades = [...new Set(rawData.slice(1).map(f => f[13]))].filter(Boolean);
-      const list = document.getElementById('lista-ciudades');
-      list.innerHTML = ciudades.map(c => `<option value="${c}">`).join('');
-  }
-
-  function toggleSubFiltro(tipo) {
-      const isChecked = document.getElementById(`check-${tipo}`).checked;
-      document.getElementById(`sub-${tipo}`).style.display = isChecked ? 'block' : 'none';
-      
-      // Reiniciar valores al cambiar selección para no generar errores
-      if (!isChecked) {
-          if (tipo === 'cliente') document.getElementById('filter-cliente').value = '';
-          if (tipo === 'organo') {
-              document.getElementById('fuero-federal').checked = false;
-              document.getElementById('fuero-local').checked = false;
-              document.getElementById('filter-ciudad').value = '';
-          }
-      }
-      ejecutarBusqueda();
-  }
-
-  function ejecutarBusqueda() {
-    const globalTerm = normalizar(document.getElementById('global-search').value);
-    const checkCliente = document.getElementById('check-cliente').checked;
-    const termCliente = normalizar(document.getElementById('filter-cliente').value);
-    const checkOrgano = document.getElementById('check-organo').checked;
-    const fueroSel = document.querySelector('input[name="fuero"]:checked')?.value;
-    const termCiudad = normalizar(document.getElementById('filter-ciudad').value);
-
-    const filtrados = rawData.slice(1).filter(fila => {
-        // Búsqueda Global (Cualquier columna A-Z)
-        const matchGlobal = !globalTerm || fila.some(celda => normalizar(celda).includes(globalTerm));
-        
-        // Filtro Cliente (Columna E -> index 4)
-        let matchCliente = true;
-        if (checkCliente && termCliente) {
-            matchCliente = normalizar(fila[4]).includes(termCliente);
-        }
-
-        // Filtro Órgano (Fuero Col O index 14, Ciudad Col N index 13)
-        let matchOrgano = true;
-        if (checkOrgano) {
-            const matchFuero = !fueroSel || normalizar(fila[14]) === normalizar(fueroSel);
-            const matchCiu = !termCiudad || normalizar(fila[13]).includes(termCiudad);
-            matchOrgano = matchFuero && matchCiu;
-        }
-
-        return matchGlobal && matchCliente && matchOrgano;
-    });
-
-    renderCards(filtrados);
-  }
-
-  function resetearBusquedas() {
-      document.getElementById('global-search').value = '';
-      document.getElementById('check-cliente').checked = false;
-      document.getElementById('check-organo').checked = false;
-      toggleSubFiltro('cliente');
-      toggleSubFiltro('organo');
-      ejecutarBusqueda();
-  }
-
-  function renderCards(filas) {
-    const contenedor = document.getElementById('lista-expedientes');
-    contenedor.innerHTML = '';
-    filas.forEach((f) => {
-        const realIndex = rawData.findIndex(r => r[1] === f[1]);
-        contenedor.innerHTML += `
-            <div class="card card-exp">
-                <div class="d-flex justify-content-between">
-                    <div class="small text-muted fw-bold">EXP: ${f[1] || '---'}</div>
-                    <button class="btn-edit" onclick="abrirEditor(${realIndex})">
-                        <span class="material-symbols-outlined">edit_note</span>
-                    </button>
-                </div>
-                <div class="h6 fw-bold text-navy my-2">${f[5] || ''} vs ${f[6] || ''}</div>
-                <div class="small text-secondary mb-2">${f[3] || ''}</div>
-                <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-1">
-                    ${f[11] || 'Sin novedades registradas.'}
-                </div>
-                <div class="text-end" style="font-size: 0.65rem; color: var(--gold);">Sincronizado: ${f[21] || '---'}</div>
-            </div>`;
-    });
-  }
-
-  const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
-  function abrirEditor(index) {
-    const fila = rawData[index];
-    document.getElementById('edit-row-index').value = index + 1;
-    document.getElementById('edit-obs').value = fila[11] || '';
-    modalEdit.show();
-  }
-
-  async function guardarCambios() {
-    const rowIndex = document.getElementById('edit-row-index').value;
-    const nuevaObs = document.getElementById('edit-obs').value;
-    const fecha = new Date().toLocaleString();
-    document.getElementById('loading-overlay').style.display = 'block';
-
-    try {
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`, {
-            method: 'PUT', headers: { 'Authorization': 'Bearer ' + accessToken },
-            body: JSON.stringify({ values: [[nuevaObs]] })
-        });
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`, {
-            method: 'PUT', headers: { 'Authorization': 'Bearer ' + accessToken },
-            body: JSON.stringify({ values: [[fecha]] })
-        });
-        modalEdit.hide();
-        // Una vez editado, reiniciamos búsquedas como pediste
-        resetearBusquedas();
-        consultarDatos();
-    } catch (e) { alert("Error al guardar"); }
-    document.getElementById('loading-overlay').style.display = 'none';
-  }
-
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-}
-</script>
-<script src="https://accounts.google.com/gsi/client" onload="initGis()"></script>
-</body>
-</html>
+    <div class="d-flex align-items
