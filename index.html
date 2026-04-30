@@ -13,19 +13,21 @@
     :root { --navy: #0D1B2A; --gold: #C5A059; --white: #FFFFFF; }
     body { background-color: #F8F9FA; font-family: 'Inter', sans-serif; padding-bottom: 80px; }
     
-    /* Navbar con Logo a la derecha */
-    .nav-app { 
-      background: var(--navy); 
-      color: var(--white); 
-      padding: 10px 0; 
-      border-bottom: 3px solid var(--gold); 
+    #splash-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--navy); color: white; z-index: 3000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center;
     }
-    .logo-right { height: 50px; width: auto; object-fit: contain; }
 
-    /* Buscador Global */
+    .nav-app { background: var(--navy); color: var(--white); padding: 8px 0; border-bottom: 3px solid var(--gold); }
+    
+    /* Logo desde GitHub */
+    .logo-img { height: 45px; width: auto; object-fit: contain; }
+    .logo-splash { height: 120px; width: auto; margin-bottom: 20px; }
+
     .search-section { background: white; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; }
     
-    /* Tarjetas con Botón de Edición */
     .card-exp { 
       border: none; border-top: 4px solid var(--gold); 
       border-radius: 8px; background: var(--white);
@@ -33,23 +35,27 @@
     }
     .btn-edit { color: var(--gold); cursor: pointer; border: none; background: none; }
     
-    /* Modal de Edición */
-    .modal-header { background: var(--navy); color: white; border-bottom: 2px solid var(--gold); }
-    
-    #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:2000; padding-top:200px; text-align:center; }
+    #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:2000; padding-top:200px; text-align:center; }
   </style>
 </head>
 <body>
 
+<div id="splash-screen">
+    <img src="logo.png" class="logo-splash" alt="Logo Táctica">
+    <h3 class="fw-bold mb-1">TÁCTICA ABOGADOS</h3>
+    <p class="mb-4 opacity-75">Sincronización de Expedientes</p>
+    <button class="btn btn-lg btn-outline-light px-5" onclick="iniciarSesion()" style="border-radius: 30px;">INGRESAR AL SISTEMA</button>
+</div>
+
 <div id="loading-overlay">
     <div class="spinner-border text-warning"></div>
-    <p class="mt-2 fw-bold">Procesando...</p>
+    <p class="mt-2 fw-bold">Actualizando base de datos...</p>
 </div>
 
 <nav class="nav-app shadow-sm">
   <div class="container d-flex justify-content-between align-items-center">
-    <div class="fw-bold">TÁCTICA ABOGADOS</div>
-    <img src="https://drive.google.com/uc?id=1ICABUABDG_Xo5qnVSlI3I2lzvLfCe7pl" class="logo-right" alt="Logo">
+    <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN INTERNA</div>
+    <img src="logo.png" class="logo-img" alt="Logo">
   </div>
 </nav>
 
@@ -57,46 +63,34 @@
     <div class="container">
         <div class="input-group">
             <span class="input-group-text bg-white border-end-0"><span class="material-symbols-outlined text-muted">search</span></span>
-            <input type="text" id="global-search" class="form-control border-start-0" placeholder="Búsqueda global (Expediente, Cliente, Juzgado...)" onkeyup="buscarGlobal()">
+            <input type="text" id="global-search" class="form-control border-start-0" placeholder="Buscar por expediente, cliente, juzgado..." onkeyup="buscarGlobal()">
         </div>
     </div>
 </div>
 
 <div class="container mt-3">
-    <div id="lista-expedientes">
-        <div class="text-center p-5">
-            <p class="text-muted">Iniciando sesión segura...</p>
-        </div>
-    </div>
+    <div id="lista-expedientes"></div>
 </div>
 
 <div class="modal fade" id="modalEditar" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Editar Expediente</h5>
+      <div class="modal-header bg-dark text-white" style="border-bottom: 2px solid var(--gold);">
+        <h5 class="modal-title">Actualizar Expediente</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="form-edicion">
             <input type="hidden" id="edit-row-index">
             <div class="mb-3">
-                <label class="form-label small fw-bold">NÚMERO DE EXPEDIENTE</label>
-                <input type="text" id="edit-exp" class="form-control">
-            </div>
-            <div class="mb-3">
-                <label class="form-label small fw-bold">ESTADO PROCESAL / OBSERVACIONES</label>
-                <textarea id="edit-obs" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="mb-3">
-                <label class="form-label small fw-bold">UBICACIÓN / STATUS</label>
-                <input type="text" id="edit-status" class="form-control">
+                <label class="form-label small fw-bold">AVANCE / ESTADO PROCESAL</label>
+                <textarea id="edit-obs" class="form-control" rows="5"></textarea>
             </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-dark" style="background: var(--navy);" onclick="guardarCambios()">Guardar en la Nube</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-dark" onclick="guardarCambios()" style="background: var(--navy);">Guardar en Sheets</button>
       </div>
     </div>
   </div>
@@ -104,126 +98,97 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  window.CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com';
-  window.SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
-  window.tokenClient = null;
-  window.accessToken = null;
-  window.rawData = [];
+  const CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com'; 
+  const SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
+  let tokenClient, accessToken, rawData = [];
 
-  // 1. Inicialización e Inicio de Sesión Automático
-  window.initGis = function() {
-    window.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: window.CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets', // Scope de edición
+  function initGis() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
         callback: (tokenResponse) => {
             if (tokenResponse.access_token) {
-                window.accessToken = tokenResponse.access_token;
+                accessToken = tokenResponse.access_token;
+                document.getElementById('splash-screen').style.display = 'none';
+                document.getElementById('search-bar').style.display = 'block';
                 consultarDatos();
             }
         },
     });
-    // Disparar login de inmediato
-    window.tokenClient.requestAccessToken({prompt: ''});
-  };
+  }
 
-  // 2. Obtener Datos
+  function iniciarSesion() { tokenClient.requestAccessToken(); }
+
   async function consultarDatos() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!A:Z`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
     try {
-        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + window.accessToken } });
+        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
         const data = await response.json();
-        window.rawData = data.values;
-        document.getElementById('search-bar').style.display = 'block';
-        renderCards(window.rawData.slice(1));
+        rawData = data.values;
+        renderCards(rawData.slice(1));
     } catch (e) { console.error(e); }
   }
 
-  // 3. Búsqueda Global (A-Z)
   function buscarGlobal() {
     const term = document.getElementById('global-search').value.toLowerCase();
-    const filtrados = window.rawData.slice(1).filter(fila => {
-        return fila.some(celda => celda && celda.toString().toLowerCase().includes(term));
-    });
+    const filtrados = rawData.slice(1).filter(fila => 
+        fila.some(celda => celda && celda.toString().toLowerCase().includes(term))
+    );
     renderCards(filtrados);
   }
 
-  // 4. Renderizar Tarjetas
   function renderCards(filas) {
     const contenedor = document.getElementById('lista-expedientes');
     contenedor.innerHTML = '';
-    
-    filas.forEach((f, index) => {
-        // Buscamos el índice real en rawData para la edición
-        const realIndex = window.rawData.findIndex(r => r[1] === f[1]);
-
+    filas.forEach((f) => {
+        const realIndex = rawData.findIndex(r => r[1] === f[1]);
         contenedor.innerHTML += `
             <div class="card card-exp">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="small text-muted fw-bold">EXP: ${f[1] || 'S/N'}</div>
+                <div class="d-flex justify-content-between">
+                    <div class="small text-muted fw-bold">EXP: ${f[1] || '---'}</div>
                     <button class="btn-edit" onclick="abrirEditor(${realIndex})">
                         <span class="material-symbols-outlined">edit_note</span>
                     </button>
                 </div>
-                <div class="h6 fw-bold text-navy my-2">${f[5] || 'Actor'} vs ${f[6] || 'Demandado'}</div>
-                <div class="small text-secondary mb-1">
-                    <span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle">balance</span> ${f[3] || 'Juzgado'}
+                <div class="h6 fw-bold text-navy my-2">${f[5] || ''} vs ${f[6] || ''}</div>
+                <div class="small text-secondary mb-2">${f[3] || ''}</div>
+                <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-1">
+                    ${f[11] || 'Sin novedades registradas.'}
                 </div>
-                <div class="small text-gold fw-bold">${f[11] || 'Estatus...'}</div>
+                <div class="text-end" style="font-size: 0.65rem; color: var(--gold);">Sincronizado: ${f[21] || '---'}</div>
             </div>`;
     });
   }
 
-  // 5. Funcionalidad de Edición (Escritura)
   const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
-
   function abrirEditor(index) {
-    const fila = window.rawData[index];
-    document.getElementById('edit-row-index').value = index + 1; // Las filas en Sheets son 1-based
-    document.getElementById('edit-exp').value = fila[1] || '';
-    document.getElementById('edit-obs').value = fila[11] || ''; // Columna L (Estado Procesal)
-    document.getElementById('edit-status').value = fila[21] || ''; // Columna V (Modificación)
+    const fila = rawData[index];
+    document.getElementById('edit-row-index').value = index + 1;
+    document.getElementById('edit-obs').value = fila[11] || '';
     modalEdit.show();
   }
 
   async function guardarCambios() {
     const rowIndex = document.getElementById('edit-row-index').value;
+    const nuevaObs = document.getElementById('edit-obs').value;
+    const fecha = new Date().toLocaleString();
     document.getElementById('loading-overlay').style.display = 'block';
 
-    // Preparamos los valores para actualizar (Ejemplo: Columnas B, L y V)
-    // Usamos el método update de la API
-    const range = `DB!B${rowIndex}:V${rowIndex}`;
-    const values = [[
-        document.getElementById('edit-exp').value, // B
-        null, null, null, null, null, null, null, null, // C a K (null no sobreescribe si se hace bien, pero Sheets API suele requerir la fila completa o rangos específicos)
-        document.getElementById('edit-obs').value, // L
-        null, null, null, null, null, null, null, null, null, // M a U
-        new Date().toLocaleString() // V (Auto-fecha)
-    ]];
-
-    // Nota: Para una edición más limpia de columnas específicas usamos rangos separados, 
-    // pero para este prototipo actualizaremos la columna L (Estado Procesal) que es el index 11
-    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`;
-
     try {
-        const response = await fetch(updateUrl, {
-            method: 'PUT',
-            headers: { 
-                'Authorization': 'Bearer ' + window.accessToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ values: [[document.getElementById('edit-obs').value]] })
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT', headers: { 'Authorization': 'Bearer ' + accessToken },
+            body: JSON.stringify({ values: [[nuevaObs]] })
         });
-
-        if (response.ok) {
-            modalEdit.hide();
-            consultarDatos(); // Recargar
-        }
-    } catch (err) { alert("Error al guardar"); }
-    
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT', headers: { 'Authorization': 'Bearer ' + accessToken },
+            body: JSON.stringify({ values: [[fecha]] })
+        });
+        modalEdit.hide();
+        consultarDatos();
+    } catch (e) { alert("Error al guardar"); }
     document.getElementById('loading-overlay').style.display = 'none';
   }
 </script>
-
 <script src="https://accounts.google.com/gsi/client" onload="initGis()"></script>
 </body>
 </html>
