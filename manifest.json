@@ -1,7 +1,7 @@
 {"name": "Tactica PWA","short_name": "Tactica","start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#0D1B2A",
+  "theme_color": "#0D1B2A",
   "icons":
   [
     {"src": "/icon-192.png","sizes": "192x192","purpose": "maskable"},
