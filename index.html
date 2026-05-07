@@ -349,7 +349,7 @@ async function consultarDatos() {
             prepararFiltros();
             App.paginaActual = 1;
             App.filtrados = App.rawData.slice(1);
-            renderCards(App.filtrados);
+            window.aplicarFiltroFinal();
         } else if (data.values && data.values.length <= 1) {
             toast('La hoja de datos está vacía.', 'warning');
         } else {
@@ -391,16 +391,23 @@ function parseFecha(fechaStr) {
     if (!fechaStr) return new Date(0);
 
     const partes = fechaStr.match(
-        /(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})\\s*(\\d{1,2}):(\\d{1,2}):(\\d{1,2})/
+        /(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{1,2}):(\d{1,2})/
     );
 
     if (!partes) return new Date(0);
 
     const [, d, m, y, h, min, s] = partes;
 
-    return new Date(y, m - 1, d, h, min, s);
+    return new Date(
+        parseInt(y),
+        parseInt(m) - 1,
+        parseInt(d),
+        parseInt(h),
+        parseInt(min),
+        parseInt(s)
+    );
 }
-function prepararFiltros() {
+  function prepararFiltros() {
     const datos = App.rawData.slice(1);
     const clientes = [...new Set(datos.map(f => f[4]))].filter(Boolean).sort();
     document.getElementById('sel-cliente').innerHTML =
@@ -460,16 +467,16 @@ window.aplicarFiltroFinal = function () {
        ? normalizar(f[1]) === valE
        : true;
 
-        return matchGlobal && matchC && matchF && matchE;
-    });
+     return matchGlobal && matchC && matchF && matchE;
+});
 
-        const orden = document.getElementById('orden-fecha')?.value || 'recientes';
+const orden = document.getElementById('orden-fecha')?.value || 'recientes';
 
-    App.filtrados.sort((a, b) => {
-        const fechaA = parseFecha(a[21]);
-        const fechaB = parseFecha(b[21]);
+App.filtrados.sort((a, b) => {
+    const fechaA = parseFecha(a[21]);
+    const fechaB = parseFecha(b[21]);
 
-        return orden === 'recientes'
+    return orden === 'recientes'
         ? fechaB - fechaA
         : fechaA - fechaB;
 });
