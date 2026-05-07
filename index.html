@@ -129,6 +129,20 @@
 <!-- BUSCADOR -->
 <div class="search-section shadow-sm" id="search-bar" style="display:none;">
     <div class="container">
+      <div class="d-flex justify-content-end mb-2">
+    <select id="orden-fecha" class="form-select form-select-sm" 
+        style="max-width: 220px;"
+        onchange="window.aplicarFiltroFinal()">
+
+        <option value="recientes" selected>
+            Más recientes primero
+        </option>
+
+        <option value="antiguos">
+            Más antiguos primero
+        </option>
+    </select>
+</div>
         <div class="input-group mb-2">
             <span class="input-group-text bg-white border-end-0"><span class="material-symbols-outlined text-muted">search</span></span>
             <input type="text" id="busqG" class="form-control border-start-0" placeholder="Búsqueda global..." onkeyup="window.aplicarFiltroFinal()">
@@ -227,6 +241,7 @@ const App = {
     rawData     : [],
     filtrados   : [],
     paginaActual: 1,
+    ordenActual : 'recientes',
 };
 
 // ════════════════════════════════════════════════════════════
@@ -372,7 +387,19 @@ window.toggleCapas = function (tipo) {
 
     window.aplicarFiltroFinal();
 };
+function parseFecha(fechaStr) {
+    if (!fechaStr) return new Date(0);
 
+    const partes = fechaStr.match(
+        /(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})\\s*(\\d{1,2}):(\\d{1,2}):(\\d{1,2})/
+    );
+
+    if (!partes) return new Date(0);
+
+    const [, d, m, y, h, min, s] = partes;
+
+    return new Date(y, m - 1, d, h, min, s);
+}
 function prepararFiltros() {
     const datos = App.rawData.slice(1);
     const clientes = [...new Set(datos.map(f => f[4]))].filter(Boolean).sort();
@@ -436,8 +463,19 @@ window.aplicarFiltroFinal = function () {
         return matchGlobal && matchC && matchF && matchE;
     });
 
-    App.paginaActual = 1;
-    renderCards(App.filtrados);
+        const orden = document.getElementById('orden-fecha')?.value || 'recientes';
+
+    App.filtrados.sort((a, b) => {
+        const fechaA = parseFecha(a[21]);
+        const fechaB = parseFecha(b[21]);
+
+        return orden === 'recientes'
+        ? fechaB - fechaA
+        : fechaA - fechaB;
+});
+
+App.paginaActual = 1;
+renderCards(App.filtrados);
 };
 function limpiarSubFiltros() {
     document.getElementById('sel-cliente').value = '';
