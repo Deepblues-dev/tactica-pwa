@@ -21,51 +21,31 @@
     :root { --navy: #06152C; --gold: #C5A059; --white: #FFFFFF; }
     body { background-color: #F8F9FA; font-family: 'Inter', sans-serif; padding-bottom: 80px; }
     
+    /* ── SPLASH ── */
     #splash-screen {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: #06152C !important; color: white; z-index: 3000;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         text-align: center;
     }
+    .logo-img   { height: 100px; width: auto; object-fit: contain; }
+    .logo-splash { height: 360px; width: auto; margin-bottom: 5px; }
+    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
 
-    /* HEADER AJUSTADO */
+    /* ── HEADER ── */
     .nav-app { background: var(--navy); color: var(--white); padding: 12px 0; border-bottom: 1px solid var(--gold); }
     .nav-app .container { display: flex; justify-content: space-between; align-items: center; }
-    
-    .logo-img { height: 100px; width: auto; object-fit: contain; }
-    .logo-splash { height: 360px; width: auto; margin-bottom: 5px; } 
+    .header-right-group { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .btn-logout { background: transparent; border: none; color: white; padding: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: color 0.3s ease; text-decoration: none; }
+    .btn-logout .material-symbols-outlined { font-size: 35px !important; }
+    .btn-logout:hover { color: var(--gold) !important; }
 
-    .header-right-group {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 2px;
-    }
-
-    .btn-logout {
-        background: transparent;
-        border: none;
-        color: white;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        transition: color 0.3s ease;
-        text-decoration: none;
-    }
-
-    .btn-logout .material-symbols-outlined {
-        font-size: 35px !important; /* 2.5 veces más grande que el original de 14px */
-    }
-
-    .btn-logout:hover {
-        color: var(--gold) !important;
-    }
-
-    /* RESTO DE ESTILOS CONSERVADOS */
+    /* ── SEARCH ── */
     .search-section { background: white; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; }
-    
+    .filter-options { font-size: 0.85rem; margin-top: 10px; color: var(--navy); }
+    .sub-filter-box { display: none; padding: 15px; margin-top: 10px; background: #f1f3f5; border-radius: 8px; border-left: 4px solid var(--navy); }
+
+    /* ── CARDS ── */
     .card-exp { 
       border: none; border-top: 4px solid var(--gold); 
       border-radius: 8px; background: var(--white);
@@ -73,19 +53,29 @@
     }
     .btn-edit { color: var(--gold); cursor: pointer; border: none; background: none; }
 
-    .filter-options { font-size: 0.85rem; margin-top: 10px; color: var(--navy); }
-    .sub-filter-box { 
-        display: none; padding: 15px; margin-top: 10px; 
-        background: #f1f3f5; border-radius: 8px; border-left: 4px solid var(--navy);
-    }
-    
+    /* ── PAGINACIÓN ── */
+    .pagination-bar { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .pagination-bar button { background: var(--navy); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; transition: background 0.2s; }
+    .pagination-bar button:disabled { background: #ccc; cursor: default; }
+    .pagination-bar button.active { background: var(--gold); font-weight: 700; }
+    .pagination-bar span { font-size: 0.8rem; color: #555; }
+    .pagination-info { text-align: center; font-size: 0.78rem; color: #888; margin-bottom: 8px; }
+
+    /* ── LOADING ── */
     #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:2000; padding-top:200px; text-align:center; }
 
-    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
+    /* ── TOAST DE ERRORES ── */
+    #toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 280px; max-width: 90vw; }
+    .toast-msg { padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; animation: slideUp 0.3s ease; }
+    .toast-msg.success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
+    .toast-msg.error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+    .toast-msg.warning { background: #fef9c3; color: #854d0e; border-left: 4px solid #eab308; }
+    @keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
   </style>
 </head>
 <body>
 
+<!-- SPLASH -->
 <div id="splash-screen">
     <img src="logo.svg" class="logo-splash" alt="Táctica Abogados">
     <hr class="linea-solida">
@@ -93,15 +83,19 @@
     <button class="btn btn-lg btn-outline-light px-5" onclick="window.iniciarSesion()" style="border-radius: 5px;">INGRESAR AL SISTEMA</button>
 </div>
 
+<!-- LOADING -->
 <div id="loading-overlay">
     <div class="spinner-border text-primary"></div>
     <p class="mt-2 fw-bold">Procesando datos...</p>
 </div>
 
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- HEADER -->
 <nav class="nav-app shadow-sm">
   <div class="container">
     <img src="logo.svg" class="logo-img" alt="Táctica Abogados">
-
     <div class="header-right-group">
         <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN DE EXPEDIENTES</div>
         <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="window.cerrarSesion()">
@@ -112,6 +106,7 @@
   </div>
 </nav>
 
+<!-- BUSCADOR -->
 <div class="search-section shadow-sm" id="search-bar" style="display:none;">
     <div class="container">
         <div class="input-group mb-2">
@@ -142,7 +137,6 @@
                 <label class="small fw-bold text-muted mb-1">Filtrar por Cliente</label>
                 <select id="sel-cliente" class="form-select mb-2" onchange="window.aplicarFiltroFinal()"></select>
             </div>
-            
             <div id="capa-fuero" style="display:none;">
                 <label class="small fw-bold text-muted mb-1">Filtrar por Ubicación</label>
                 <div class="row g-2">
@@ -159,7 +153,6 @@
                 </div>
                 <select id="sel-juzgado" class="form-select" disabled onchange="window.aplicarFiltroFinal()"></select>
             </div>
-
             <div id="capa-exp" style="display:none;">
                 <label class="small fw-bold text-muted mb-1">Número de Expediente</label>
                 <input type="text" id="txt-exp" class="form-control" placeholder="Ej: 123/2023" onkeyup="window.aplicarFiltroFinal()">
@@ -168,10 +161,14 @@
     </div>
 </div>
 
+<!-- LISTA -->
 <div class="container mt-3">
+    <div id="pagination-info" class="pagination-info"></div>
     <div id="lista-expedientes"></div>
+    <div id="pagination-bar" class="pagination-bar"></div>
 </div>
 
+<!-- MODAL EDITAR -->
 <div class="modal fade" id="modalEditar" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -180,17 +177,18 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <form id="form-edicion">
-            <input type="hidden" id="edit-row-index">
-            <div class="mb-3">
-                <label class="form-label small fw-bold">AVANCE / ESTADO PROCESAL</label>
-                <textarea id="edit-obs" class="form-control" rows="5"></textarea>
-            </div>
-        </form>
+        <div class="mb-3">
+            <label class="form-label small fw-bold">AVANCE / ESTADO PROCESAL</label>
+            <textarea id="edit-obs" class="form-control" rows="5"></textarea>
+        </div>
+        <input type="hidden" id="edit-row-index">
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-dark" onclick="window.guardarCambios()" style="background: var(--navy);">Guardar</button>
+        <button type="button" class="btn btn-dark" id="btn-guardar" onclick="window.guardarCambios()" style="background: var(--navy);">
+            <span id="btn-guardar-txt">Guardar</span>
+            <span id="btn-guardar-spin" class="spinner-border spinner-border-sm ms-1" style="display:none;"></span>
+        </button>
       </div>
     </div>
   </div>
@@ -198,158 +196,254 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // CONFIGURACIÓN
-  window.CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com'; 
-  window.SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
-  window.tokenClient = null;
-  window.accessToken = null;
-  window.rawData = [];
+// ════════════════════════════════════════════════════════════
+// CONFIGURACIÓN
+// ════════════════════════════════════════════════════════════
+const CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com';
+const SHEET_ID  = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
+const PAGE_SIZE = 20; // expedientes por página
 
-  // UTILIDADES
-  window.normalizar = (texto) => {
-      return (texto || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-  };
+// ── Estado de la app (encapsulado, fuera de window) ──
+const App = {
+    tokenClient : null,
+    accessToken : null,   // vive SOLO en memoria, nunca en localStorage
+    rawData     : [],
+    filtrados   : [],
+    paginaActual: 1,
+};
 
-  // AUTENTICACIÓN
-  window.initGis = function() {
-    window.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: window.CLIENT_ID,
+// ════════════════════════════════════════════════════════════
+// TOAST — notificaciones no bloqueantes
+// ════════════════════════════════════════════════════════════
+function toast(mensaje, tipo = 'success', duracion = 3500) {
+    const iconos = { success: 'check_circle', error: 'error', warning: 'warning' };
+    const div = document.createElement('div');
+    div.className = `toast-msg ${tipo}`;
+    div.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">${iconos[tipo]}</span>${mensaje}`;
+    const container = document.getElementById('toast-container');
+    container.appendChild(div);
+    setTimeout(() => div.remove(), duracion);
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILIDADES
+// ════════════════════════════════════════════════════════════
+function normalizar(texto) {
+    return (texto || '').toString().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '');
+}
+
+// ════════════════════════════════════════════════════════════
+// AUTENTICACIÓN — token solo en memoria (sin localStorage)
+// ════════════════════════════════════════════════════════════
+window.initGis = function () {
+    App.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/spreadsheets',
         callback: (tokenResponse) => {
-            if (tokenResponse.access_token) {
-                window.accessToken = tokenResponse.access_token;
-                localStorage.setItem('tactica_token', window.accessToken);
-                localStorage.setItem('tactica_expiry', Date.now() + 3500000);
-                window.entrarApp();
+            if (tokenResponse && tokenResponse.access_token) {
+                App.accessToken = tokenResponse.access_token;
+                // Programar renovación automática antes de que expire (55 min)
+                setTimeout(renovarToken, 55 * 60 * 1000);
+                entrarApp();
+            } else {
+                toast('No se pudo obtener acceso. Intenta de nuevo.', 'error');
             }
         },
+        error_callback: (err) => {
+            console.error('OAuth error:', err);
+            toast('Error de autenticación: ' + (err.message || err.type || 'desconocido'), 'error');
+        }
     });
-    const savedToken = localStorage.getItem('tactica_token');
-    const expiry = localStorage.getItem('tactica_expiry');
-    if (savedToken && Date.now() < expiry) {
-        window.accessToken = savedToken;
-        window.entrarApp();
-    }
-  };
+};
 
-  window.iniciarSesion = () => window.tokenClient ? window.tokenClient.requestAccessToken() : alert("Cargando conexión...");
-  window.cerrarSesion = () => { localStorage.clear(); location.reload(); };
-  window.entrarApp = () => {
+function renovarToken() {
+    // Solicita nuevo token silenciosamente (sin popup) si el usuario sigue activo
+    if (App.tokenClient) {
+        App.tokenClient.requestAccessToken({ prompt: '' });
+    }
+}
+
+window.iniciarSesion = () => {
+    if (App.tokenClient) {
+        App.tokenClient.requestAccessToken({ prompt: 'consent' });
+    } else {
+        toast('Cargando conexión, intenta en un momento...', 'warning');
+    }
+};
+
+window.cerrarSesion = () => {
+    // Revocar el token activo en Google antes de limpiar
+    if (App.accessToken) {
+        google.accounts.oauth2.revoke(App.accessToken, () => {
+            App.accessToken = null;
+        });
+    }
+    location.reload();
+};
+
+function entrarApp() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('search-bar').style.display = 'block';
     document.getElementById('btn-logout-nav').style.display = 'flex';
-    window.consultarDatos();
-  };
+    consultarDatos();
+}
 
-  // DATOS
-  window.consultarDatos = async function() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!A:Z`;
+// ════════════════════════════════════════════════════════════
+// DATOS
+// ════════════════════════════════════════════════════════════
+async function consultarDatos() {
+    if (!App.accessToken) { toast('Sesión expirada. Ingresa de nuevo.', 'warning'); window.cerrarSesion(); return; }
+    
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
     try {
-        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + window.accessToken } });
-        const data = await response.json();
-        if (data.values) {
-            window.rawData = data.values;
-            window.prepararFiltros();
-            window.renderCards(window.rawData.slice(1));
-        } else if (data.error && data.error.status === "UNAUTHENTICATED") {
-            window.cerrarSesion();
-        }
-    } catch (e) { console.error(e); }
-  };
+        const response = await fetch(url, {
+            headers: { 'Authorization': 'Bearer ' + App.accessToken }
+        });
 
-  // LÓGICA DE FILTROS POR CAPAS
-  window.toggleCapas = function(tipo) {
+        if (response.status === 401) {
+            toast('Sesión expirada. Vuelve a ingresar.', 'warning');
+            window.cerrarSesion();
+            return;
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (data.values && data.values.length > 1) {
+            App.rawData = data.values;
+            prepararFiltros();
+            App.paginaActual = 1;
+            App.filtrados = App.rawData.slice(1);
+            renderCards(App.filtrados);
+        } else if (data.values && data.values.length <= 1) {
+            toast('La hoja de datos está vacía.', 'warning');
+        } else {
+            throw new Error(data.error?.message || 'Respuesta inesperada de la API');
+        }
+    } catch (e) {
+        console.error('consultarDatos:', e);
+        toast('No se pudieron cargar los expedientes. ' + (e.message || ''), 'error');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// FILTROS
+// ════════════════════════════════════════════════════════════
+window.toggleCapas = function (tipo) {
     const isChecked = document.getElementById(`c-${tipo}`).checked;
     document.getElementById(`capa-${tipo}`).style.display = isChecked ? 'block' : 'none';
-    
     const activos = ['cliente', 'fuero', 'exp'].some(t => document.getElementById(`c-${t}`).checked);
     document.getElementById('area-filtros').style.display = activos ? 'block' : 'none';
-
     if (!isChecked) {
         if (tipo === 'cliente') document.getElementById('sel-cliente').value = '';
         if (tipo === 'fuero') {
             document.getElementById('sel-fuero').value = '';
             document.getElementById('sel-lugar').innerHTML = '';
             document.getElementById('sel-juzgado').innerHTML = '';
+            document.getElementById('sel-lugar').disabled = true;
+            document.getElementById('sel-juzgado').disabled = true;
         }
         if (tipo === 'exp') document.getElementById('txt-exp').value = '';
     }
     window.aplicarFiltroFinal();
-  };
+};
 
-  window.prepararFiltros = function() {
-    const datos = window.rawData.slice(1);
+function prepararFiltros() {
+    const datos = App.rawData.slice(1);
     const clientes = [...new Set(datos.map(f => f[4]))].filter(Boolean).sort();
-    document.getElementById('sel-cliente').innerHTML = '<option value="">-- Todos los Clientes --</option>' + 
+    document.getElementById('sel-cliente').innerHTML =
+        '<option value="">-- Todos los Clientes --</option>' +
         clientes.map(c => `<option value="${c}">${c}</option>`).join('');
-  };
+}
 
-  window.logicFuero = function() {
+window.logicFuero = function () {
     const fuero = document.getElementById('sel-fuero').value;
     const selLugar = document.getElementById('sel-lugar');
-    if (!fuero) { selLugar.disabled = true; selLugar.innerHTML = ''; return; }
-    
-    const ciudades = [...new Set(window.rawData.slice(1).filter(f => f[14] === fuero).map(f => f[13]))].filter(Boolean).sort();
+    if (!fuero) { selLugar.disabled = true; selLugar.innerHTML = ''; window.aplicarFiltroFinal(); return; }
+    const ciudades = [...new Set(App.rawData.slice(1).filter(f => f[14] === fuero).map(f => f[13]))].filter(Boolean).sort();
     selLugar.disabled = false;
     selLugar.innerHTML = '<option value="">-- Ciudad --</option>' + ciudades.map(c => `<option value="${c}">${c}</option>`).join('');
     window.aplicarFiltroFinal();
-  };
+};
 
-  window.logicCiudad = function() {
-    const fuero = document.getElementById('sel-fuero').value;
+window.logicCiudad = function () {
+    const fuero  = document.getElementById('sel-fuero').value;
     const ciudad = document.getElementById('sel-lugar').value;
     const selJuzgado = document.getElementById('sel-juzgado');
-    if (!ciudad) { selJuzgado.disabled = true; selJuzgado.innerHTML = ''; return; }
-
-    const juzgados = [...new Set(window.rawData.slice(1).filter(f => f[14] === fuero && f[13] === ciudad).map(f => f[12]))].filter(Boolean).sort();
+    if (!ciudad) { selJuzgado.disabled = true; selJuzgado.innerHTML = ''; window.aplicarFiltroFinal(); return; }
+    const juzgados = [...new Set(App.rawData.slice(1).filter(f => f[14] === fuero && f[13] === ciudad).map(f => f[12]))].filter(Boolean).sort();
     selJuzgado.disabled = false;
     selJuzgado.innerHTML = '<option value="">-- Juzgado --</option>' + juzgados.map(j => `<option value="${j}">${j}</option>`).join('');
     window.aplicarFiltroFinal();
-  };
+};
 
-  window.aplicarFiltroFinal = function() {
-    const termG = window.normalizar(document.getElementById('busqG').value);
-    const chkC = document.getElementById('c-cliente').checked;
-    const valC = document.getElementById('sel-cliente').value;
-    const chkF = document.getElementById('c-fuero').checked;
-    const valFu = document.getElementById('sel-fuero').value;
-    const valLu = document.getElementById('sel-lugar').value;
-    const valJu = document.getElementById('sel-juzgado').value;
-    const chkE = document.getElementById('c-exp').checked;
-    const valE = window.normalizar(document.getElementById('txt-exp').value);
+window.aplicarFiltroFinal = function () {
+    const termG  = normalizar(document.getElementById('busqG').value);
+    const chkC   = document.getElementById('c-cliente').checked;
+    const valC   = document.getElementById('sel-cliente').value;
+    const chkF   = document.getElementById('c-fuero').checked;
+    const valFu  = document.getElementById('sel-fuero').value;
+    const valLu  = document.getElementById('sel-lugar').value;
+    const valJu  = document.getElementById('sel-juzgado').value;
+    const chkE   = document.getElementById('c-exp').checked;
+    const valE   = normalizar(document.getElementById('txt-exp').value);
 
-    const filtrados = window.rawData.slice(1).filter(f => {
-        const matchGlobal = !termG || f.some(col => window.normalizar(col).includes(termG));
-        let matchC = chkC && valC ? f[4] === valC : true;
+    App.filtrados = App.rawData.slice(1).filter(f => {
+        const matchGlobal = !termG || f.some(col => normalizar(col).includes(termG));
+        const matchC = chkC && valC ? f[4] === valC : true;
         let matchF = true;
         if (chkF) {
-            matchF = (valFu ? f[14] === valFu : true) && (valLu ? f[13] === valLu : true) && (valJu ? f[12] === valJu : true);
+            matchF = (valFu ? f[14] === valFu : true) &&
+                     (valLu ? f[13] === valLu : true) &&
+                     (valJu ? f[12] === valJu : true);
         }
-        let matchE = chkE && valE ? window.normalizar(f[1]).includes(valE) : true;
+        const matchE = chkE && valE ? normalizar(f[1]).includes(valE) : true;
         return matchGlobal && matchC && matchF && matchE;
     });
-    window.renderCards(filtrados);
-  };
 
-  window.resetearBusquedas = function() {
+    App.paginaActual = 1;
+    renderCards(App.filtrados);
+};
+
+window.resetearBusquedas = function () {
     document.getElementById('busqG').value = '';
     ['cliente', 'fuero', 'exp'].forEach(t => {
         document.getElementById(`c-${t}`).checked = false;
         window.toggleCapas(t);
     });
-  };
+};
 
-  // RENDERIZADO
-  window.renderCards = function(filas) {
+// ════════════════════════════════════════════════════════════
+// RENDERIZADO + PAGINACIÓN
+// ════════════════════════════════════════════════════════════
+function renderCards(filas) {
+    const total   = filas.length;
+    const paginas = Math.ceil(total / PAGE_SIZE);
+    const p       = Math.min(App.paginaActual, paginas || 1);
+    App.paginaActual = p;
+
+    const inicio = (p - 1) * PAGE_SIZE;
+    const slice  = filas.slice(inicio, inicio + PAGE_SIZE);
+
+    // Info
+    const infoEl = document.getElementById('pagination-info');
+    infoEl.textContent = total
+        ? `Mostrando ${inicio + 1}–${Math.min(inicio + PAGE_SIZE, total)} de ${total} expediente${total !== 1 ? 's' : ''}`
+        : 'Sin resultados.';
+
+    // Cards
     const contenedor = document.getElementById('lista-expedientes');
     contenedor.innerHTML = '';
-    filas.forEach((f) => {
-        const realIndex = window.rawData.findIndex(r => r[1] === f[1]);
+    slice.forEach(f => {
+        const realIndex = App.rawData.findIndex(r => r[1] === f[1]);
         contenedor.innerHTML += `
             <div class="card card-exp">
                 <div class="d-flex justify-content-between">
                     <div class="small text-muted fw-bold">EXP: ${f[1] || '---'}</div>
-                    <button class="btn-edit" onclick="window.abrirEditor(${realIndex})">
+                    <button class="btn-edit" onclick="abrirEditor(${realIndex})" title="Editar">
                         <span class="material-symbols-outlined">edit_note</span>
                     </button>
                 </div>
@@ -361,38 +455,139 @@
                 <div class="text-end" style="font-size: 0.65rem; color: var(--gold);">Rev: ${f[21] || '---'}</div>
             </div>`;
     });
-  };
 
-  const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
-  window.abrirEditor = (index) => {
-    const fila = window.rawData[index];
+    // Paginación
+    renderPaginacion(paginas, p);
+}
+
+function renderPaginacion(totalPaginas, actual) {
+    const bar = document.getElementById('pagination-bar');
+    bar.innerHTML = '';
+    if (totalPaginas <= 1) return;
+
+    const ir = (n) => { App.paginaActual = n; renderCards(App.filtrados); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+    // Anterior
+    const prev = document.createElement('button');
+    prev.textContent = '‹ Anterior';
+    prev.disabled = actual === 1;
+    prev.onclick = () => ir(actual - 1);
+    bar.appendChild(prev);
+
+    // Números de página (máx 5 visibles)
+    const rango = paginasVisibles(actual, totalPaginas);
+    rango.forEach(n => {
+        if (n === '…') {
+            const span = document.createElement('span');
+            span.textContent = '…';
+            bar.appendChild(span);
+        } else {
+            const btn = document.createElement('button');
+            btn.textContent = n;
+            if (n === actual) btn.classList.add('active');
+            btn.onclick = () => ir(n);
+            bar.appendChild(btn);
+        }
+    });
+
+    // Siguiente
+    const next = document.createElement('button');
+    next.textContent = 'Siguiente ›';
+    next.disabled = actual === totalPaginas;
+    next.onclick = () => ir(actual + 1);
+    bar.appendChild(next);
+}
+
+function paginasVisibles(actual, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const paginas = [1];
+    if (actual > 3) paginas.push('…');
+    for (let i = Math.max(2, actual - 1); i <= Math.min(total - 1, actual + 1); i++) paginas.push(i);
+    if (actual < total - 2) paginas.push('…');
+    paginas.push(total);
+    return paginas;
+}
+
+// ════════════════════════════════════════════════════════════
+// EDICIÓN
+// ════════════════════════════════════════════════════════════
+const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
+
+window.abrirEditor = function (index) {
+    if (index < 0 || index >= App.rawData.length) {
+        toast('No se encontró el expediente.', 'error'); return;
+    }
+    const fila = App.rawData[index];
     document.getElementById('edit-row-index').value = index + 1;
     document.getElementById('edit-obs').value = fila[11] || '';
     modalEdit.show();
-  };
+};
 
-  window.guardarCambios = async function() {
+window.guardarCambios = async function () {
+    if (!App.accessToken) { toast('Sesión expirada. Ingresa de nuevo.', 'warning'); return; }
+
     const rowIndex = document.getElementById('edit-row-index').value;
-    const nuevaObs = document.getElementById('edit-obs').value;
-    const fecha = new Date().toLocaleString();
-    document.getElementById('loading-overlay').style.display = 'block';
+    const nuevaObs = document.getElementById('edit-obs').value.trim();
+    
+    if (!rowIndex) { toast('Error: no se identificó el expediente.', 'error'); return; }
+
+    // UI de carga en botón
+    const btnTxt  = document.getElementById('btn-guardar-txt');
+    const btnSpin = document.getElementById('btn-guardar-spin');
+    const btnGuardar = document.getElementById('btn-guardar');
+    btnTxt.textContent = 'Guardando...';
+    btnSpin.style.display = 'inline-block';
+    btnGuardar.disabled = true;
+
+    const fecha = new Date().toLocaleString('es-MX');
 
     try {
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`, {
-            method: 'PUT', headers: { 'Authorization': 'Bearer ' + window.accessToken },
-            body: JSON.stringify({ values: [[nuevaObs]] })
-        });
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`, {
-            method: 'PUT', headers: { 'Authorization': 'Bearer ' + window.accessToken },
-            body: JSON.stringify({ values: [[fecha]] })
-        });
-        modalEdit.hide();
-        window.consultarDatos();
-    } catch (e) { alert("Error al guardar"); }
-    document.getElementById('loading-overlay').style.display = 'none';
-  };
+        const [r1, r2] = await Promise.all([
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + App.accessToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ values: [[nuevaObs]] })
+            }),
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + App.accessToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ values: [[fecha]] })
+            })
+        ]);
 
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        if (!r1.ok || !r2.ok) {
+            const errData = await (r1.ok ? r2 : r1).json().catch(() => ({}));
+            if (errData.error?.status === 'UNAUTHENTICATED') {
+                toast('Sesión expirada. Vuelve a ingresar.', 'warning');
+                window.cerrarSesion(); return;
+            }
+            throw new Error(`Error al escribir en la hoja: ${errData.error?.message || 'desconocido'}`);
+        }
+
+        // Actualizar rawData en memoria sin recargar toda la hoja
+        const idx = parseInt(rowIndex) - 1;
+        if (App.rawData[idx]) {
+            App.rawData[idx][11] = nuevaObs;
+            App.rawData[idx][21] = fecha;
+        }
+
+        modalEdit.hide();
+        toast('Expediente actualizado correctamente.', 'success');
+        renderCards(App.filtrados); // re-render sin nueva petición
+    } catch (e) {
+        console.error('guardarCambios:', e);
+        toast('No se pudo guardar: ' + (e.message || 'Error desconocido.'), 'error');
+    } finally {
+        btnTxt.textContent = 'Guardar';
+        btnSpin.style.display = 'none';
+        btnGuardar.disabled = false;
+    }
+};
+
+// ════════════════════════════════════════════════════════════
+// SERVICE WORKER
+// ════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="window.initGis()"></script>
 </body>
