@@ -199,31 +199,166 @@
     <div id="pagination-bar" class="pagination-bar"></div>
 </div>
 
+
 <!-- MODAL EDITAR -->
 <div class="modal fade" id="modalEditar" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header bg-dark text-white" style="border-bottom: 2px solid var(--gold);">
-        <h5 class="modal-title">Actualizar Expediente</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-            <label class="form-label small fw-bold">AVANCE / ESTADO PROCESAL</label>
-            <textarea id="edit-obs" class="form-control" rows="5"></textarea>
+
+      <div class="modal-header bg-dark text-white" style="border-bottom:2px solid var(--gold);">
+        <h5 class="modal-title">Editar Expediente</h5>
+
+        <div class="form-check form-switch ms-3">
+          <input class="form-check-input"
+                 type="checkbox"
+                 id="toggle-edicion"
+                 onchange="window.toggleModoEdicion()">
+
+          <label class="form-check-label small fw-bold" for="toggle-edicion">
+            EDICIÓN COMPLETA
+          </label>
         </div>
+
+        <button type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- EDICIÓN SIMPLE -->
+        <div id="modo-simple">
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small">
+              Nota rápida
+            </label>
+
+            <textarea id="edit-nota"
+                      class="form-control"
+                      rows="3"></textarea>
+          </div>
+
+          <div class="row g-2">
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">
+                Ubicación del expediente
+              </label>
+
+              <input type="text"
+                     id="edit-ubicacion"
+                     class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">
+                Término
+              </label>
+
+              <input type="text"
+                     id="edit-termino"
+                     class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">
+                Pendientes
+              </label>
+
+              <textarea id="edit-pendientes"
+                        class="form-control"
+                        rows="2"></textarea>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">
+                Observaciones
+              </label>
+
+              <textarea id="edit-observaciones"
+                        class="form-control"
+                        rows="2"></textarea>
+            </div>
+
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label fw-bold small">
+              Estado Procesal
+            </label>
+
+            <textarea id="edit-estado"
+                      class="form-control"
+                      rows="5"></textarea>
+          </div>
+
+        </div>
+
+        <!-- EDICIÓN COMPLETA -->
+        <div id="modo-completo" style="display:none;">
+          <div class="row g-3" id="contenedor-edicion-completa"></div>
+        </div>
+
+        <!-- VALIDACIÓN FÍSICO / DIGITAL -->
+        <div class="mt-4 border-top pt-3">
+
+          <div class="fw-bold small mb-2">
+            Tipo de revisión
+          </div>
+
+          <div class="d-flex gap-2">
+
+            <button class="btn btn-outline-dark"
+                    type="button"
+                    onclick="window.setTipoRevision('FISICO')">
+              FÍSICO
+            </button>
+
+            <button class="btn btn-outline-primary"
+                    type="button"
+                    onclick="window.setTipoRevision('DIGITAL')">
+              DIGITAL
+            </button>
+
+          </div>
+
+          <input type="hidden" id="tipo-revision">
+
+        </div>
+
         <input type="hidden" id="edit-row-index">
+
       </div>
+
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-dark" id="btn-guardar" onclick="window.guardarCambios()" style="background: var(--navy);">
-            <span id="btn-guardar-txt">Guardar</span>
-            <span id="btn-guardar-spin" class="spinner-border spinner-border-sm ms-1" style="display:none;"></span>
+
+        <button type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal">
+          Cerrar
         </button>
+
+        <button type="button"
+                class="btn btn-dark"
+                id="btn-guardar"
+                onclick="window.guardarCambios()"
+                style="background:var(--navy);">
+
+          <span id="btn-guardar-txt">Guardar</span>
+
+          <span id="btn-guardar-spin"
+                class="spinner-border spinner-border-sm ms-1"
+                style="display:none;"></span>
+
+        </button>
+
       </div>
+
     </div>
   </div>
 </div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -243,6 +378,39 @@ const App = {
     paginaActual: 1,
     ordenActual : 'recientes',
 };
+  const COLUMNAS = [
+    'ID',
+    'Expediente',
+    'Acumulado',
+    'Juzgado',
+    'Cliente',
+    'Actor',
+    'Demandado',
+    'Juicio',
+    'Monto',
+    'Relacionado',
+    'Piezas',
+    'Estado_Procesal',
+    'Entidad_Federativa',
+    'Distrito_Judicial_o_Ciudad',
+    'Fuero',
+    'Recursos',
+    'Sentencia',
+    'Autorizados',
+    'Observaciones',
+    'Pendientes',
+    'Termino',
+    'Ultima_Modificacion',
+    'Ubicacion_del_Expediente',
+    'Ultima_revision',
+    'Nota_rapida'
+];
+
+const COLUMNAS_NO_EDITABLES = [
+    0,
+    21,
+    23
+];
 
 // ════════════════════════════════════════════════════════════
 // TOAST — notificaciones no bloqueantes
@@ -683,75 +851,171 @@ function paginasVisibles(actual, total) {
 // EDICIÓN
 // ════════════════════════════════════════════════════════════
 const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
+window.toggleModoEdicion = function () {
 
+    const completo = document.getElementById('toggle-edicion').checked;
+
+    document.getElementById('modo-simple').style.display =
+        completo ? 'none' : 'block';
+
+    document.getElementById('modo-completo').style.display =
+        completo ? 'block' : 'none';
+};
+
+window.setTipoRevision = function (tipo) {
+
+    document.getElementById('tipo-revision').value = tipo;
+
+    toast(`Revisión marcada como ${tipo}`, 'success', 1500);
+};
 window.abrirEditor = function (index) {
+
     if (index < 0 || index >= App.rawData.length) {
-        toast('No se encontró el expediente.', 'error'); return;
+        toast('No se encontró el expediente.', 'error');
+        return;
     }
+
     const fila = App.rawData[index];
+
     document.getElementById('edit-row-index').value = index + 1;
-    document.getElementById('edit-obs').value = fila[11] || '';
+
+    // SIMPLE
+    document.getElementById('edit-nota').value          = fila[24] || '';
+    document.getElementById('edit-ubicacion').value    = fila[22] || '';
+    document.getElementById('edit-estado').value       = fila[11] || '';
+    document.getElementById('edit-termino').value      = fila[20] || '';
+    document.getElementById('edit-pendientes').value   = fila[19] || '';
+    document.getElementById('edit-observaciones').value= fila[18] || '';
+
+    document.getElementById('tipo-revision').value = '';
+
+    // COMPLETA
+    const cont = document.getElementById('contenedor-edicion-completa');
+    cont.innerHTML = '';
+
+    COLUMNAS.forEach((nombre, i) => {
+
+        if (COLUMNAS_NO_EDITABLES.includes(i)) {
+            return;
+        }
+
+        cont.innerHTML += `
+            <div class="col-md-6">
+
+                <label class="form-label small fw-bold">
+                    ${nombre}
+                </label>
+
+                <textarea
+                    class="form-control campo-completo"
+                    rows="2"
+                    data-index="${i}">${fila[i] || ''}</textarea>
+
+            </div>
+        `;
+    });
+
+    document.getElementById('toggle-edicion').checked = false;
+    window.toggleModoEdicion();
+
     modalEdit.show();
 };
 
 window.guardarCambios = async function () {
-    if (!App.accessToken) { toast('Sesión expirada. Ingresa de nuevo.', 'warning'); return; }
+
+    if (!App.accessToken) {
+        toast('Sesión expirada.', 'warning');
+        return;
+    }
 
     const rowIndex = document.getElementById('edit-row-index').value;
-    const nuevaObs = document.getElementById('edit-obs').value.trim();
-    
-    if (!rowIndex) { toast('Error: no se identificó el expediente.', 'error'); return; }
 
-    // UI de carga en botón
-    const btnTxt  = document.getElementById('btn-guardar-txt');
-    const btnSpin = document.getElementById('btn-guardar-spin');
-    const btnGuardar = document.getElementById('btn-guardar');
-    btnTxt.textContent = 'Guardando...';
-    btnSpin.style.display = 'inline-block';
-    btnGuardar.disabled = true;
+    const tipoRevision =
+        document.getElementById('tipo-revision').value;
 
-    const fecha = new Date().toLocaleString('es-MX');
+    if (!tipoRevision) {
+        toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
+        return;
+    }
+
+    const completo =
+        document.getElementById('toggle-edicion').checked;
+
+    const ahora = new Date();
+
+    const fecha =
+        String(ahora.getDate()).padStart(2, '0') + '/' +
+        String(ahora.getMonth() + 1).padStart(2, '0') + '/' +
+        ahora.getFullYear() + ' ' +
+        String(ahora.getHours()).padStart(2, '0') + ':' +
+        String(ahora.getMinutes()).padStart(2, '0') + ':' +
+        String(ahora.getSeconds()).padStart(2, '0');
+
+    const updates = [];
+
+    function pushUpdate(col, value) {
+
+        updates.push(
+            fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${col}${rowIndex}?valueInputOption=USER_ENTERED`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + App.accessToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: [[value]]
+                    })
+                }
+            )
+        );
+    }
+
+    if (!completo) {
+
+        pushUpdate('Y', document.getElementById('edit-nota').value);
+        pushUpdate('W', document.getElementById('edit-ubicacion').value);
+        pushUpdate('L', document.getElementById('edit-estado').value);
+        pushUpdate('U', document.getElementById('edit-termino').value);
+        pushUpdate('T', document.getElementById('edit-pendientes').value);
+        pushUpdate('S', document.getElementById('edit-observaciones').value);
+
+    } else {
+
+        document.querySelectorAll('.campo-completo')
+            .forEach(el => {
+
+                const index = parseInt(el.dataset.index);
+
+                const letra =
+                    String.fromCharCode(65 + index);
+
+                pushUpdate(letra, el.value);
+            });
+    }
+
+    // FECHA
+    pushUpdate('V', fecha);
+
+    // TIPO DE REVISIÓN
+    pushUpdate('X', tipoRevision);
 
     try {
-        const [r1, r2] = await Promise.all([
-            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`, {
-                method: 'PUT',
-                headers: { 'Authorization': 'Bearer ' + App.accessToken, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ values: [[nuevaObs]] })
-            }),
-            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`, {
-                method: 'PUT',
-                headers: { 'Authorization': 'Bearer ' + App.accessToken, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ values: [[fecha]] })
-            })
-        ]);
 
-        if (!r1.ok || !r2.ok) {
-            const errData = await (r1.ok ? r2 : r1).json().catch(() => ({}));
-            if (errData.error?.status === 'UNAUTHENTICATED') {
-                toast('Sesión expirada. Vuelve a ingresar.', 'warning');
-                window.cerrarSesion(); return;
-            }
-            throw new Error(`Error al escribir en la hoja: ${errData.error?.message || 'desconocido'}`);
-        }
+        await Promise.all(updates);
 
-        // Actualizar rawData en memoria sin recargar toda la hoja
-        const idx = parseInt(rowIndex) - 1;
-        if (App.rawData[idx]) {
-            App.rawData[idx][11] = nuevaObs;
-            App.rawData[idx][21] = fecha;
-        }
+        toast('Expediente actualizado.', 'success');
 
         modalEdit.hide();
-        toast('Expediente actualizado correctamente.', 'success');
-        renderCards(App.filtrados); // re-render sin nueva petición
+
+        consultarDatos();
+
     } catch (e) {
-        console.error('guardarCambios:', e);
-        toast('No se pudo guardar: ' + (e.message || 'Error desconocido.'), 'error');
-    } finally {
-        btnTxt.textContent = 'Guardar';
-        btnSpin.style.display = 'none';
-        btnGuardar.disabled = false;
+
+        console.error(e);
+
+        toast('No se pudo guardar.', 'error');
     }
 };
 
