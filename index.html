@@ -404,32 +404,41 @@ window.logicCiudad = function () {
 
 window.aplicarFiltroFinal = function () {
     const termG  = normalizar(document.getElementById('busqG').value);
-    const chkC   = document.getElementById('c-cliente').checked;
+
+    const btnClienteActivo = document.getElementById('btn-f-cliente').classList.contains('activo');
+    const btnFueroActivo   = document.getElementById('btn-f-fuero').classList.contains('activo');
+    const btnExpActivo     = document.getElementById('btn-f-exp').classList.contains('activo');
+
     const valC   = document.getElementById('sel-cliente').value;
-    const chkF   = document.getElementById('c-fuero').checked;
     const valFu  = document.getElementById('sel-fuero').value;
     const valLu  = document.getElementById('sel-lugar').value;
     const valJu  = document.getElementById('sel-juzgado').value;
-    const chkE   = document.getElementById('c-exp').checked;
     const valE   = normalizar(document.getElementById('txt-exp').value);
 
     App.filtrados = App.rawData.slice(1).filter(f => {
         const matchGlobal = !termG || f.some(col => normalizar(col).includes(termG));
-        const matchC = chkC && valC ? f[4] === valC : true;
+
+        const matchC = btnClienteActivo && valC
+            ? f[4] === valC
+            : true;
+
         let matchF = true;
-        if (chkF) {
+        if (btnFueroActivo) {
             matchF = (valFu ? f[14] === valFu : true) &&
                      (valLu ? f[13] === valLu : true) &&
                      (valJu ? f[3] === valJu : true);
         }
-        const matchE = chkE && valE ? normalizar(f[1]).includes(valE) : true;
+
+        const matchE = btnExpActivo && valE
+            ? normalizar(f[1]).includes(valE)
+            : true;
+
         return matchGlobal && matchC && matchF && matchE;
     });
 
     App.paginaActual = 1;
     renderCards(App.filtrados);
 };
-
 function limpiarSubFiltros() {
     document.getElementById('sel-cliente').value = '';
     document.getElementById('sel-fuero').value = '';
