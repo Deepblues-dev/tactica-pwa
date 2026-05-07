@@ -481,25 +481,78 @@ function renderCards(filas) {
     // Cards
     const contenedor = document.getElementById('lista-expedientes');
     contenedor.innerHTML = '';
-    slice.forEach(f => {
-        const realIndex = App.rawData.findIndex(r => r[1] === f[1]);
-        contenedor.innerHTML += `
-            <div class="card card-exp">
-                <div class="d-flex justify-content-between">
-                    <div class="small text-muted fw-bold">EXP: ${f[1] || '---'}</div>
-                    <button class="btn-edit" onclick="abrirEditor(${realIndex})" title="Editar">
-                        <span class="material-symbols-outlined">edit_note</span>
-                    </button>
-                </div>
-                <div class="h6 fw-bold text-navy my-2" style="color:var(--navy);">${f[5] || ''} vs ${f[6] || ''}</div>
-                <div class="small text-secondary mb-2">${f[3] || ''} | ${f[13] || ''}</div>
-                <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-1">
-                    ${f[11] || 'Sin novedades.'}
-                </div>
-                <div class="text-end" style="font-size: 0.65rem; color: var(--gold);">Rev: ${f[21] || '---'}</div>
-            </div>`;
-    });
+   slice.forEach(f => {
+    const realIndex = App.rawData.findIndex(r => r[1] === f[1]);
 
+    const pendientes = f[19]
+        ? `<div class="small mt-2"><span class="fw-bold">Pendientes:</span> ${f[19]}</div>`
+        : '';
+
+    const termino = f[20]
+        ? `<div class="small"><span class="fw-bold">Término:</span> ${f[20]}</div>`
+        : '';
+
+    contenedor.innerHTML += `
+        <div class="card card-exp">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="small text-muted fw-bold">
+                        ${f[13] || '---'} | ${f[14] || '---'}
+                    </div>
+
+                    <div class="small text-secondary">
+                        ${f[3] || '---'}
+                    </div>
+                </div>
+
+                <button class="btn-edit" onclick="abrirEditor(${realIndex})" title="Editar">
+                    <span class="material-symbols-outlined">edit_note</span>
+                </button>
+            </div>
+
+            <div class="h6 fw-bold text-navy mt-2 mb-1" style="color:var(--navy);">
+                EXP: ${f[1] || '---'}
+            </div>
+
+            <div class="small mb-1">
+                <span class="fw-bold">Juicio:</span> ${f[7] || '---'}
+            </div>
+
+            <div class="small mb-1">
+                <span class="fw-bold">Actor:</span> ${f[5] || '---'}
+            </div>
+
+            <div class="small mb-2">
+                <span class="fw-bold">Demandado:</span> ${f[6] || '---'}
+            </div>
+
+            <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-2">
+                <div class="fw-bold mb-1">Estado Procesal</div>
+                ${f[11] || 'Sin novedades.'}
+            </div>
+
+            <div class="small mb-1">
+                <span class="fw-bold">Ubicación:</span> ${f[22] || '---'}
+            </div>
+
+            <div class="small mb-1">
+                <span class="fw-bold">Autorizados:</span> ${f[17] || '---'}
+            </div>
+
+            ${pendientes}
+            ${termino}
+
+            <div class="small mt-2 p-2 rounded" style="background:#fff8e8; border-left:3px solid var(--gold);">
+                <span class="fw-bold">Nota rápida:</span>
+                ${f[24] || 'Sin nota'}
+            </div>
+
+            <div class="text-end mt-2" style="font-size: 0.65rem; color: var(--gold);">
+                <div>Rev: ${f[21] || '---'}</div>
+                <div>Última revisión: ${f[23] || '---'}</div>
+            </div>
+        </div>`;
+});
     // Paginación
     renderPaginacion(paginas, p);
 }
