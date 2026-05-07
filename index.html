@@ -429,9 +429,9 @@ window.aplicarFiltroFinal = function () {
                      (valJu ? f[3] === valJu : true);
         }
 
-        const matchE = btnExpActivo && valE
-            ? normalizar(f[1]).includes(valE)
-            : true;
+       const matchE = btnExpActivo && valE
+       ? normalizar(f[1]) === valE
+       : true;
 
         return matchGlobal && matchC && matchF && matchE;
     });
