@@ -388,24 +388,53 @@ window.toggleCapas = function (tipo) {
     window.aplicarFiltroFinal();
 };
 function parseFecha(fechaStr) {
-    if (!fechaStr) return new Date(0);
 
-    const partes = fechaStr.match(
-        /(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{1,2}):(\d{1,2})/
+    if (!fechaStr || typeof fechaStr !== 'string') {
+        return 0;
+    }
+
+    fechaStr = fechaStr
+        .trim()
+        .toLowerCase()
+        .replace(',', '')
+        .replace('a. m.', 'am')
+        .replace('p. m.', 'pm')
+        .replace('a.m.', 'am')
+        .replace('p.m.', 'pm');
+
+    const match = fechaStr.match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?$/
     );
 
-    if (!partes) return new Date(0);
+    if (!match) {
+        return 0;
+    }
 
-    const [, d, m, y, h, min, s] = partes;
+    let dia       = parseInt(match[1], 10);
+    let mes       = parseInt(match[2], 10) - 1;
+    let anio      = parseInt(match[3], 10);
+    let horas     = parseInt(match[4] || 0, 10);
+    let minutos   = parseInt(match[5] || 0, 10);
+    let segundos  = parseInt(match[6] || 0, 10);
+    let periodo   = match[7] || '';
+
+    // Conversión AM/PM
+    if (periodo === 'pm' && horas < 12) {
+        horas += 12;
+    }
+
+    if (periodo === 'am' && horas === 12) {
+        horas = 0;
+    }
 
     return new Date(
-        parseInt(y),
-        parseInt(m) - 1,
-        parseInt(d),
-        parseInt(h),
-        parseInt(min),
-        parseInt(s)
-    );
+        anio,
+        mes,
+        dia,
+        horas,
+        minutos,
+        segundos
+    ).getTime();
 }
   function prepararFiltros() {
     const datos = App.rawData.slice(1);
