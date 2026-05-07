@@ -71,7 +71,31 @@
       border-radius: 8px; background: var(--white);
       box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; padding: 15px;
     }
-    .btn-edit { color: var(--gold); cursor: pointer; border: none; background: none; }
+    .btn-edit {
+    color: var(--gold);
+    cursor: pointer;
+    border: none;
+    background: none;
+
+    transform: scale(2);
+    transform-origin: center;
+
+    padding: 10px;
+    margin-right: 10px;
+    margin-top: 6px;
+    }
+
+    .btn-edit .material-symbols-outlined {
+    font-size: 22px !important;
+}
+    .form-check-input:checked {
+    background-color: var(--gold) !important;
+    border-color: var(--gold) !important;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(197,160,89,0.35) !important;
+}
 
     /* ── PAGINACIÓN ── */
     .pagination-bar { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -309,15 +333,40 @@
 
           <div class="d-flex gap-2">
 
-            <button class="btn btn-outline-dark"
+            <button class="btn btn-revision"
                     type="button"
                     onclick="window.setTipoRevision('FISICO')">
               FÍSICO
             </button>
 
-            <button class="btn btn-outline-primary"
+            <button class="btn btn-revision"
                     type="button"
                     onclick="window.setTipoRevision('DIGITAL')">
+              .btn-revision {
+
+    border: 2px solid var(--navy);
+    color: var(--navy);
+    background: white;
+
+    font-weight: 700;
+    letter-spacing: 0.5px;
+
+    transition: all 0.2s ease;
+}
+
+.btn-revision:hover {
+
+    background: var(--navy);
+    color: var(--gold);
+}
+
+.btn-revision.activo {
+
+    background: var(--navy) !important;
+    color: var(--gold) !important;
+
+    border-color: var(--navy) !important;
+}
               DIGITAL
             </button>
 
