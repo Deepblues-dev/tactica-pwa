@@ -42,8 +42,28 @@
 
     /* ── SEARCH ── */
     .search-section { background: white; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; }
-    .filter-options { font-size: 0.85rem; margin-top: 10px; color: var(--navy); }
     .sub-filter-box { display: none; padding: 15px; margin-top: 10px; background: #f1f3f5; border-radius: 8px; border-left: 4px solid var(--navy); }
+
+    /* ── BOTONES DE FILTRO ── */
+    .filter-btn-group { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+    .filter-btn {
+        flex: 1; max-width: 130px;
+        padding: 7px 10px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.5px;
+        border: 2px solid var(--navy); border-radius: 6px;
+        background: white; color: var(--navy);
+        cursor: pointer; transition: all 0.18s ease;
+        display: flex; align-items: center; justify-content: center; gap: 5px;
+        box-shadow: 0 2px 0 #b0bec5;
+        user-select: none;
+    }
+    .filter-btn:active { transform: translateY(2px); box-shadow: none; }
+    .filter-btn.activo {
+        background: var(--navy); color: var(--gold);
+        box-shadow: inset 0 3px 6px rgba(0,0,0,0.35);
+        transform: translateY(2px);
+        border-color: var(--navy);
+    }
+    .filter-btn .material-symbols-outlined { font-size: 16px; }
 
     /* ── CARDS ── */
     .card-exp { 
@@ -117,19 +137,16 @@
             </button>
         </div>
 
-        <div class="filter-options d-flex gap-4 justify-content-center">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="c-cliente" onclick="window.toggleCapas('cliente')">
-                <label class="fw-bold small" for="c-cliente">CLIENTE</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="c-fuero" onclick="window.toggleCapas('fuero')">
-                <label class="fw-bold small" for="c-fuero">LUGAR</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="c-exp" onclick="window.toggleCapas('exp')">
-                <label class="fw-bold small" for="c-exp">EXPEDIENTE</label>
-            </div>
+        <div class="filter-btn-group">
+            <button class="filter-btn" id="btn-f-cliente" onclick="window.toggleCapas('cliente')">
+                <span class="material-symbols-outlined">person</span> CLIENTE
+            </button>
+            <button class="filter-btn" id="btn-f-fuero" onclick="window.toggleCapas('fuero')">
+                <span class="material-symbols-outlined">location_on</span> LUGAR
+            </button>
+            <button class="filter-btn" id="btn-f-exp" onclick="window.toggleCapas('exp')">
+                <span class="material-symbols-outlined">folder</span> EXPEDIENTE
+            </button>
         </div>
 
         <div id="area-filtros" style="display:none;" class="sub-filter-box mt-3">
@@ -333,21 +350,26 @@ async function consultarDatos() {
 // FILTROS
 // ════════════════════════════════════════════════════════════
 window.toggleCapas = function (tipo) {
-    const isChecked = document.getElementById(`c-${tipo}`).checked;
-    document.getElementById(`capa-${tipo}`).style.display = isChecked ? 'block' : 'none';
-    const activos = ['cliente', 'fuero', 'exp'].some(t => document.getElementById(`c-${t}`).checked);
-    document.getElementById('area-filtros').style.display = activos ? 'block' : 'none';
-    if (!isChecked) {
-        if (tipo === 'cliente') document.getElementById('sel-cliente').value = '';
-        if (tipo === 'fuero') {
-            document.getElementById('sel-fuero').value = '';
-            document.getElementById('sel-lugar').innerHTML = '';
-            document.getElementById('sel-juzgado').innerHTML = '';
-            document.getElementById('sel-lugar').disabled = true;
-            document.getElementById('sel-juzgado').disabled = true;
-        }
-        if (tipo === 'exp') document.getElementById('txt-exp').value = '';
+    const tipos = ['cliente', 'fuero', 'exp'];
+    const btnActivo = document.getElementById(`btn-f-${tipo}`);
+    const yaActivo  = btnActivo.classList.contains('activo');
+
+    // Desactivar y ocultar TODOS primero (exclusividad + reset)
+    tipos.forEach(t => {
+        document.getElementById(`btn-f-${t}`).classList.remove('activo');
+        document.getElementById(`capa-${t}`).style.display = 'none';
+    });
+    limpiarSubFiltros();
+    document.getElementById('busqG').value = '';
+    document.getElementById('area-filtros').style.display = 'none';
+
+    // Si el botón pulsado NO estaba activo → activarlo
+    if (!yaActivo) {
+        btnActivo.classList.add('activo');
+        document.getElementById(`capa-${tipo}`).style.display = 'block';
+        document.getElementById('area-filtros').style.display = 'block';
     }
+
     window.aplicarFiltroFinal();
 };
 
@@ -374,7 +396,7 @@ window.logicCiudad = function () {
     const ciudad = document.getElementById('sel-lugar').value;
     const selJuzgado = document.getElementById('sel-juzgado');
     if (!ciudad) { selJuzgado.disabled = true; selJuzgado.innerHTML = ''; window.aplicarFiltroFinal(); return; }
-    const juzgados = [...new Set(App.rawData.slice(1).filter(f => f[14] === fuero && f[13] === ciudad).map(f => f[12]))].filter(Boolean).sort();
+    const juzgados = [...new Set(App.rawData.slice(1).filter(f => f[14] === fuero && f[13] === ciudad).map(f => f[3]))].filter(Boolean).sort();
     selJuzgado.disabled = false;
     selJuzgado.innerHTML = '<option value="">-- Juzgado --</option>' + juzgados.map(j => `<option value="${j}">${j}</option>`).join('');
     window.aplicarFiltroFinal();
@@ -398,7 +420,7 @@ window.aplicarFiltroFinal = function () {
         if (chkF) {
             matchF = (valFu ? f[14] === valFu : true) &&
                      (valLu ? f[13] === valLu : true) &&
-                     (valJu ? f[12] === valJu : true);
+                     (valJu ? f[3] === valJu : true);
         }
         const matchE = chkE && valE ? normalizar(f[1]).includes(valE) : true;
         return matchGlobal && matchC && matchF && matchE;
@@ -408,12 +430,25 @@ window.aplicarFiltroFinal = function () {
     renderCards(App.filtrados);
 };
 
+function limpiarSubFiltros() {
+    document.getElementById('sel-cliente').value = '';
+    document.getElementById('sel-fuero').value = '';
+    document.getElementById('sel-lugar').innerHTML = '';
+    document.getElementById('sel-lugar').disabled = true;
+    document.getElementById('sel-juzgado').innerHTML = '';
+    document.getElementById('sel-juzgado').disabled = true;
+    document.getElementById('txt-exp').value = '';
+}
+
 window.resetearBusquedas = function () {
     document.getElementById('busqG').value = '';
     ['cliente', 'fuero', 'exp'].forEach(t => {
-        document.getElementById(`c-${t}`).checked = false;
-        window.toggleCapas(t);
+        document.getElementById(`btn-f-${t}`).classList.remove('activo');
+        document.getElementById(`capa-${t}`).style.display = 'none';
     });
+    limpiarSubFiltros();
+    document.getElementById('area-filtros').style.display = 'none';
+    window.aplicarFiltroFinal();
 };
 
 // ════════════════════════════════════════════════════════════
