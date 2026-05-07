@@ -28,10 +28,42 @@
         text-align: center;
     }
 
-    .nav-app { background: var(--navy); color: var(--white); padding: 8px 0; border-bottom: 1px solid var(--gold); }
-    .logo-img { height: 120px; width: auto; object-fit: contain; }
+    /* HEADER AJUSTADO */
+    .nav-app { background: var(--navy); color: var(--white); padding: 12px 0; border-bottom: 1px solid var(--gold); }
+    .nav-app .container { display: flex; justify-content: space-between; align-items: center; }
+    
+    .logo-img { height: 100px; width: auto; object-fit: contain; }
     .logo-splash { height: 360px; width: auto; margin-bottom: 5px; } 
 
+    .header-right-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+    }
+
+    .btn-logout {
+        background: transparent;
+        border: none;
+        color: white;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: color 0.3s ease;
+        text-decoration: none;
+    }
+
+    .btn-logout .material-symbols-outlined {
+        font-size: 35px !important; /* 2.5 veces más grande que el original de 14px */
+    }
+
+    .btn-logout:hover {
+        color: var(--gold) !important;
+    }
+
+    /* RESTO DE ESTILOS CONSERVADOS */
     .search-section { background: white; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; }
     
     .card-exp { 
@@ -46,13 +78,6 @@
         display: none; padding: 15px; margin-top: 10px; 
         background: #f1f3f5; border-radius: 8px; border-left: 4px solid var(--navy);
     }
-
-    .btn-logout {
-        background: transparent; border: 1px solid rgba(255,255,255,0.3);
-        color: rgba(255,255,255,0.8); font-size: 0.7rem; padding: 2px 8px;
-        border-radius: 4px; display: flex; align-items: center; gap: 4px;
-    }
-    .btn-logout:hover { border-color: var(--gold); color: var(--gold); }
     
     #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:2000; padding-top:200px; text-align:center; }
 
@@ -74,14 +99,16 @@
 </div>
 
 <nav class="nav-app shadow-sm">
-  <div class="container d-flex justify-content-between align-items-center">
-    <div class="d-flex align-items-center gap-3">
+  <div class="container">
+    <img src="logo.svg" class="logo-img" alt="Táctica Abogados">
+
+    <div class="header-right-group">
         <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN DE EXPEDIENTES</div>
         <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="window.cerrarSesion()">
-            <span class="material-symbols-outlined" style="font-size: 14px;">logout</span> Salir
+            <span class="material-symbols-outlined">logout</span>
+            <span style="font-size: 0.8rem; font-weight: 600;">SALIR</span>
         </button>
     </div>
-    <img src="logo.svg" class="logo-img" alt="Táctica Abogados">
   </div>
 </nav>
 
