@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Táctica Abogados | Gestión</title>
+  
+  <meta name="theme-color" content="#06152C">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#06152C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <style>
+    :root { --navy: #06152C; --gold: #C5A059; --white: #FFFFFF; }
+    body { background-color: #F8F9FA; font-family: 'Inter', sans-serif; padding-bottom: 80px; }
+    
+    #splash-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #06152C !important; color: white; z-index: 3000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center;
+    }
+
+    .nav-app { background: var(--navy); color: var(--white); padding: 8px 0; border-bottom: 1px solid var(--gold); }
+    .logo-img { height: 120px; width: auto; object-fit: contain; }
+    .logo-splash { height: 360px; width: auto; margin-bottom: 5px; } 
+
+    .search-section { background: white; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; }
+    
+    .card-exp { 
+      border: none; border-top: 4px solid var(--gold); 
+      border-radius: 8px; background: var(--white);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; padding: 15px;
+    }
+    .btn-edit { color: var(--gold); cursor: pointer; border: none; background: none; }
+
+    .filter-options { font-size: 0.85rem; margin-top: 10px; color: var(--navy); }
+    .sub-filter-box { 
+        display: none; padding: 15px; margin-top: 10px; 
+        background: #f1f3f5; border-radius: 8px; border-left: 4px solid var(--navy);
+    }
+
+    .btn-logout {
+        background: transparent; border: 1px solid rgba(255,255,255,0.3);
+        color: rgba(255,255,255,0.8); font-size: 0.7rem; padding: 2px 8px;
+        border-radius: 4px; display: flex; align-items: center; gap: 4px;
+    }
+    .btn-logout:hover { border-color: var(--gold); color: var(--gold); }
+    
+    #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:2000; padding-top:200px; text-align:center; }
+
+    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div id="splash-screen">
+    <img src="logo.svg" class="logo-splash" alt="Táctica Abogados">
+    <hr class="linea-solida">
+    <p class="mb-4 opacity-75 fs-1">Gestión de expedientes</p>
+    <button class="btn btn-lg btn-outline-light px-5" onclick="window.iniciarSesion()" style="border-radius: 5px;">INGRESAR AL SISTEMA</button>
+</div>
+
+<div id="loading-overlay">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-2 fw-bold">Procesando datos...</p>
+</div>
+
+<nav class="nav-app shadow-sm">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+        <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN DE EXPEDIENTES</div>
+        <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="window.cerrarSesion()">
+            <span class="material-symbols-outlined" style="font-size: 14px;">logout</span> Salir
+        </button>
+    </div>
+    <img src="logo.svg" class="logo-img" alt="Táctica Abogados">
+  </div>
+</nav>
+
+<div class="search-section shadow-sm" id="search-bar" style="display:none;">
+    <div class="container">
+        <div class="input-group mb-2">
+            <span class="input-group-text bg-white border-end-0"><span class="material-symbols-outlined text-muted">search</span></span>
+            <input type="text" id="busqG" class="form-control border-start-0" placeholder="Búsqueda global..." onkeyup="window.aplicarFiltroFinal()">
+            <button class="btn btn-outline-secondary border-start-0" type="button" onclick="window.resetearBusquedas()">
+                <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px;">refresh</span>
+            </button>
+        </div>
+
+        <div class="filter-options d-flex gap-4 justify-content-center">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="c-cliente" onclick="window.toggleCapas('cliente')">
+                <label class="fw-bold small" for="c-cliente">CLIENTE</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="c-fuero" onclick="window.toggleCapas('fuero')">
+                <label class="fw-bold small" for="c-fuero">LUGAR</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="c-exp" onclick="window.toggleCapas('exp')">
+                <label class="fw-bold small" for="c-exp">EXPEDIENTE</label>
+            </div>
+        </div>
+
+        <div id="area-filtros" style="display:none;" class="sub-filter-box mt-3">
+            <div id="capa-cliente" style="display:none;">
+                <label class="small fw-bold text-muted mb-1">Filtrar por Cliente</label>
+                <select id="sel-cliente" class="form-select mb-2" onchange="window.aplicarFiltroFinal()"></select>
+            </div>
+            
+            <div id="capa-fuero" style="display:none;">
+                <label class="small fw-bold text-muted mb-1">Filtrar por Ubicación</label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <select id="sel-fuero" class="form-select mb-2" onchange="window.logicFuero()">
+                            <option value="">-- Fuero --</option>
+                            <option>Local</option>
+                            <option>Federal</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <select id="sel-lugar" class="form-select mb-2" disabled onchange="window.logicCiudad()"></select>
+                    </div>
+                </div>
+                <select id="sel-juzgado" class="form-select" disabled onchange="window.aplicarFiltroFinal()"></select>
+            </div>
+
+            <div id="capa-exp" style="display:none;">
+                <label class="small fw-bold text-muted mb-1">Número de Expediente</label>
+                <input type="text" id="txt-exp" class="form-control" placeholder="Ej: 123/2023" onkeyup="window.aplicarFiltroFinal()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-3">
+    <div id="lista-expedientes"></div>
+</div>
+
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white" style="border-bottom: 2px solid var(--gold);">
+        <h5 class="modal-title">Actualizar Expediente</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-edicion">
+            <input type="hidden" id="edit-row-index">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">AVANCE / ESTADO PROCESAL</label>
+                <textarea id="edit-obs" class="form-control" rows="5"></textarea>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-dark" onclick="window.guardarCambios()" style="background: var(--navy);">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // CONFIGURACIÓN
+  window.CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com'; 
+  window.SHEET_ID = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
+  window.tokenClient = null;
+  window.accessToken = null;
+  window.rawData = [];
+
+  // UTILIDADES
+  window.normalizar = (texto) => {
+      return (texto || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  };
+
+  // AUTENTICACIÓN
+  window.initGis = function() {
+    window.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: window.CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: (tokenResponse) => {
+            if (tokenResponse.access_token) {
+                window.accessToken = tokenResponse.access_token;
+                localStorage.setItem('tactica_token', window.accessToken);
+                localStorage.setItem('tactica_expiry', Date.now() + 3500000);
+                window.entrarApp();
+            }
+        },
+    });
+    const savedToken = localStorage.getItem('tactica_token');
+    const expiry = localStorage.getItem('tactica_expiry');
+    if (savedToken && Date.now() < expiry) {
+        window.accessToken = savedToken;
+        window.entrarApp();
+    }
+  };
+
+  window.iniciarSesion = () => window.tokenClient ? window.tokenClient.requestAccessToken() : alert("Cargando conexión...");
+  window.cerrarSesion = () => { localStorage.clear(); location.reload(); };
+  window.entrarApp = () => {
+    document.getElementById('splash-screen').style.display = 'none';
+    document.getElementById('search-bar').style.display = 'block';
+    document.getElementById('btn-logout-nav').style.display = 'flex';
+    window.consultarDatos();
+  };
+
+  // DATOS
+  window.consultarDatos = async function() {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!A:Z`;
+    try {
+        const response = await fetch(url, { headers: { 'Authorization': 'Bearer ' + window.accessToken } });
+        const data = await response.json();
+        if (data.values) {
+            window.rawData = data.values;
+            window.prepararFiltros();
+            window.renderCards(window.rawData.slice(1));
+        } else if (data.error && data.error.status === "UNAUTHENTICATED") {
+            window.cerrarSesion();
+        }
+    } catch (e) { console.error(e); }
+  };
+
+  // LÓGICA DE FILTROS POR CAPAS
+  window.toggleCapas = function(tipo) {
+    const isChecked = document.getElementById(`c-${tipo}`).checked;
+    document.getElementById(`capa-${tipo}`).style.display = isChecked ? 'block' : 'none';
+    
+    const activos = ['cliente', 'fuero', 'exp'].some(t => document.getElementById(`c-${t}`).checked);
+    document.getElementById('area-filtros').style.display = activos ? 'block' : 'none';
+
+    if (!isChecked) {
+        if (tipo === 'cliente') document.getElementById('sel-cliente').value = '';
+        if (tipo === 'fuero') {
+            document.getElementById('sel-fuero').value = '';
+            document.getElementById('sel-lugar').innerHTML = '';
+            document.getElementById('sel-juzgado').innerHTML = '';
+        }
+        if (tipo === 'exp') document.getElementById('txt-exp').value = '';
+    }
+    window.aplicarFiltroFinal();
+  };
+
+  window.prepararFiltros = function() {
+    const datos = window.rawData.slice(1);
+    const clientes = [...new Set(datos.map(f => f[4]))].filter(Boolean).sort();
+    document.getElementById('sel-cliente').innerHTML = '<option value="">-- Todos los Clientes --</option>' + 
+        clientes.map(c => `<option value="${c}">${c}</option>`).join('');
+  };
+
+  window.logicFuero = function() {
+    const fuero = document.getElementById('sel-fuero').value;
+    const selLugar = document.getElementById('sel-lugar');
+    if (!fuero) { selLugar.disabled = true; selLugar.innerHTML = ''; return; }
+    
+    const ciudades = [...new Set(window.rawData.slice(1).filter(f => f[14] === fuero).map(f => f[13]))].filter(Boolean).sort();
+    selLugar.disabled = false;
+    selLugar.innerHTML = '<option value="">-- Ciudad --</option>' + ciudades.map(c => `<option value="${c}">${c}</option>`).join('');
+    window.aplicarFiltroFinal();
+  };
+
+  window.logicCiudad = function() {
+    const fuero = document.getElementById('sel-fuero').value;
+    const ciudad = document.getElementById('sel-lugar').value;
+    const selJuzgado = document.getElementById('sel-juzgado');
+    if (!ciudad) { selJuzgado.disabled = true; selJuzgado.innerHTML = ''; return; }
+
+    const juzgados = [...new Set(window.rawData.slice(1).filter(f => f[14] === fuero && f[13] === ciudad).map(f => f[12]))].filter(Boolean).sort();
+    selJuzgado.disabled = false;
+    selJuzgado.innerHTML = '<option value="">-- Juzgado --</option>' + juzgados.map(j => `<option value="${j}">${j}</option>`).join('');
+    window.aplicarFiltroFinal();
+  };
+
+  window.aplicarFiltroFinal = function() {
+    const termG = window.normalizar(document.getElementById('busqG').value);
+    const chkC = document.getElementById('c-cliente').checked;
+    const valC = document.getElementById('sel-cliente').value;
+    const chkF = document.getElementById('c-fuero').checked;
+    const valFu = document.getElementById('sel-fuero').value;
+    const valLu = document.getElementById('sel-lugar').value;
+    const valJu = document.getElementById('sel-juzgado').value;
+    const chkE = document.getElementById('c-exp').checked;
+    const valE = window.normalizar(document.getElementById('txt-exp').value);
+
+    const filtrados = window.rawData.slice(1).filter(f => {
+        const matchGlobal = !termG || f.some(col => window.normalizar(col).includes(termG));
+        let matchC = chkC && valC ? f[4] === valC : true;
+        let matchF = true;
+        if (chkF) {
+            matchF = (valFu ? f[14] === valFu : true) && (valLu ? f[13] === valLu : true) && (valJu ? f[12] === valJu : true);
+        }
+        let matchE = chkE && valE ? window.normalizar(f[1]).includes(valE) : true;
+        return matchGlobal && matchC && matchF && matchE;
+    });
+    window.renderCards(filtrados);
+  };
+
+  window.resetearBusquedas = function() {
+    document.getElementById('busqG').value = '';
+    ['cliente', 'fuero', 'exp'].forEach(t => {
+        document.getElementById(`c-${t}`).checked = false;
+        window.toggleCapas(t);
+    });
+  };
+
+  // RENDERIZADO
+  window.renderCards = function(filas) {
+    const contenedor = document.getElementById('lista-expedientes');
+    contenedor.innerHTML = '';
+    filas.forEach((f) => {
+        const realIndex = window.rawData.findIndex(r => r[1] === f[1]);
+        contenedor.innerHTML += `
+            <div class="card card-exp">
+                <div class="d-flex justify-content-between">
+                    <div class="small text-muted fw-bold">EXP: ${f[1] || '---'}</div>
+                    <button class="btn-edit" onclick="window.abrirEditor(${realIndex})">
+                        <span class="material-symbols-outlined">edit_note</span>
+                    </button>
+                </div>
+                <div class="h6 fw-bold text-navy my-2" style="color:var(--navy);">${f[5] || ''} vs ${f[6] || ''}</div>
+                <div class="small text-secondary mb-2">${f[3] || ''} | ${f[13] || ''}</div>
+                <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-1">
+                    ${f[11] || 'Sin novedades.'}
+                </div>
+                <div class="text-end" style="font-size: 0.65rem; color: var(--gold);">Rev: ${f[21] || '---'}</div>
+            </div>`;
+    });
+  };
+
+  const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
+  window.abrirEditor = (index) => {
+    const fila = window.rawData[index];
+    document.getElementById('edit-row-index').value = index + 1;
+    document.getElementById('edit-obs').value = fila[11] || '';
+    modalEdit.show();
+  };
+
+  window.guardarCambios = async function() {
+    const rowIndex = document.getElementById('edit-row-index').value;
+    const nuevaObs = document.getElementById('edit-obs').value;
+    const fecha = new Date().toLocaleString();
+    document.getElementById('loading-overlay').style.display = 'block';
+
+    try {
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!L${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT', headers: { 'Authorization': 'Bearer ' + window.accessToken },
+            body: JSON.stringify({ values: [[nuevaObs]] })
+        });
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${window.SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT', headers: { 'Authorization': 'Bearer ' + window.accessToken },
+            body: JSON.stringify({ values: [[fecha]] })
+        });
+        modalEdit.hide();
+        window.consultarDatos();
+    } catch (e) { alert("Error al guardar"); }
+    document.getElementById('loading-overlay').style.display = 'none';
+  };
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+<script src="https://accounts.google.com/gsi/client" onload="window.initGis()"></script>
+</body>
+</html>
