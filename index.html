@@ -11,7 +11,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="#06152C">
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="icon-180.png">
-  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -54,9 +55,29 @@
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         text-align: center;
     }
-    .logo-img   { height: 100px; width: auto; object-fit: contain; }
-    .logo-splash { height: 360px; width: auto; margin-bottom: 5px; }
-    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
+    .logo-img {
+
+    width: auto;
+
+    height: 60px;
+
+    object-fit: contain;
+
+    display: block;
+}    .logo-splash {
+
+    width: min(80vw, 360px);
+
+    height: auto;
+
+    aspect-ratio: 1 / 1;
+
+    object-fit: contain;
+
+    display: block;
+
+    margin-bottom: 5px;
+}    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
 
     /* ── HEADER ── */
     .nav-app { background: var(--navy); color: var(--white); padding: 12px 0; border-bottom: 1px solid var(--gold); }
@@ -147,7 +168,7 @@
 
 <!-- SPLASH -->
 <div id="splash-screen">
-    <img src="logo.svg" class="logo-splash" alt="Táctica Abogados">
+    <img src="icon-512.png" class="logo-splash" alt="Táctica Abogados">
     <hr class="linea-solida">
     <p class="mb-4 opacity-75 fs-1">Gestión de expedientes</p>
     <button class="btn btn-lg btn-outline-light px-5" onclick="window.iniciarSesion()" style="border-radius: 5px;">INGRESAR AL SISTEMA</button>
@@ -165,7 +186,7 @@
 <!-- HEADER -->
 <nav class="nav-app shadow-sm">
   <div class="container">
-    <img src="logo.svg" class="logo-img" alt="Táctica Abogados">
+    <img src="icon-192.png" class="logo-img" alt="Táctica Abogados">
     <div class="header-right-group">
         <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN DE EXPEDIENTES</div>
         <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="window.cerrarSesion()">
