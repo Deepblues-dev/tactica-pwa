@@ -20,7 +20,33 @@
   <style>
     :root { --navy: #06152C; --gold: #C5A059; --white: #FFFFFF; }
     body { background-color: #F8F9FA; font-family: 'Inter', sans-serif; padding-bottom: 80px; }
-    
+
+     /* ── BOTONES DE FISICO-DIGITAL ── */
+    .btn-revision {
+
+    border: 2px solid var(--navy);
+    color: var(--navy);
+    background: white;
+
+    font-weight: 700;
+    letter-spacing: 0.5px;
+
+    transition: all 0.2s ease;
+}
+
+.btn-revision:hover {
+
+    background: var(--navy);
+    color: var(--gold);
+}
+
+.btn-revision.activo {
+
+    background: var(--navy) !important;
+    color: var(--gold) !important;
+
+    border-color: var(--navy) !important;
+}
     /* ── SPLASH ── */
     #splash-screen {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
