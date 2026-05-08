@@ -505,6 +505,17 @@ const CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleuser
 const SHEET_ID  = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
 const PAGE_SIZE = 20; // expedientes por página
 
+  const LOG_SHEET = 'LOGS';
+
+const DEVICE_ID =
+    localStorage.getItem('device_id') ||
+    crypto.randomUUID();
+
+localStorage.setItem(
+    'device_id',
+    DEVICE_ID
+);
+
 // ── Estado de la app (encapsulado, fuera de window) ──
 const App = {
     tokenClient : null,
@@ -1239,7 +1250,97 @@ function pushUpdate(col, value) {
 
     // TIPO DE REVISIÓN
     pushUpdate('X', tipoRevision);
+for (const u of updates) {
 
+    const index =
+        u.col.charCodeAt(0) - 65;
+
+    const nombreCampo =
+        COLUMNAS[index];
+
+    const valorAnterior =
+        filaOriginal[index] || '';
+
+    const valorNuevo =
+        u.value || '';
+
+    if (valorAnterior === valorNuevo) {
+        continue;
+    }
+
+    const versionAnterior =
+        filaOriginal[21] || '';
+
+    const versionNueva =
+        fecha;
+
+    const logBase = {
+
+        expediente:
+            filaNueva[1],
+
+        campo:
+            nombreCampo,
+
+        anterior:
+            valorAnterior,
+
+        nuevo:
+            valorNuevo,
+
+        versionAnterior,
+
+        versionNueva
+    };
+
+    const hash =
+        await generarHash(logBase);
+
+    const log = {
+
+        logId:
+            crypto.randomUUID(),
+
+        fecha,
+
+        usuario:
+            localStorage.getItem('usuario') ||
+            'desconocido',
+
+        deviceId:
+            DEVICE_ID,
+
+        expedienteId:
+            filaNueva[0],
+
+        campo:
+            nombreCampo,
+
+        valorAnterior,
+
+        valorNuevo,
+
+        versionAnterior,
+
+        versionNueva,
+
+        modo:
+            navigator.onLine
+                ? 'ONLINE'
+                : 'OFFLINE',
+
+        estado:
+            navigator.onLine
+                ? 'SYNCED'
+                : 'PENDING',
+
+        hash
+    };
+
+    await registrarLog(log);
+
+    await subirLogSheets(log);
+}
     try {
 
     // ACTUALIZAR LOCAL SIEMPRE
@@ -1391,6 +1492,96 @@ window.addEventListener('offline', () => {
 });
 
 // ═══════════════════════════════════════
+// LOGS
+// ═══════════════════════════════════════
+async function subirLogSheets(log) {
+
+    if (!navigator.onLine) {
+        return;
+    }
+
+    try {
+
+        await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:M:append?valueInputOption=USER_ENTERED`,
+            {
+                method: 'POST',
+
+                headers: {
+
+                    Authorization:
+                        'Bearer ' + App.accessToken,
+
+                    'Content-Type':
+                        'application/json'
+                },
+
+                body: JSON.stringify({
+
+                    values: [[
+
+                        log.logId,
+
+                        log.fecha,
+
+                        log.usuario,
+
+                        log.deviceId,
+
+                        log.expedienteId,
+
+                        log.campo,
+
+                        log.valorAnterior,
+
+                        log.valorNuevo,
+
+                        log.versionAnterior,
+
+                        log.versionNueva,
+
+                        log.modo,
+
+                        log.estado,
+
+                        log.hash
+                    ]]
+                })
+            }
+        );
+
+    } catch (e) {
+
+        console.error(
+            'Error LOG',
+            e
+        );
+    }
+}
+async function generarHash(data) {
+
+    const texto =
+        JSON.stringify(data);
+
+    const encoder =
+        new TextEncoder();
+
+    const bytes =
+        encoder.encode(texto);
+
+    const hashBuffer =
+        await crypto.subtle.digest(
+            'SHA-256',
+            bytes
+        );
+
+    return Array.from(
+        new Uint8Array(hashBuffer)
+    )
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+// ═══════════════════════════════════════
 // SYNC PLACEHOLDER
 // ═══════════════════════════════════════
 
@@ -1417,7 +1608,7 @@ async function sincronizarPendientes() {
 
         try {
 
-            // VERIFICAR VERSIÓN ONLINE
+            // OBTENER VERSIÓN ONLINE
             const response = await fetch(
                 `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${item.rowIndex}`,
                 {
@@ -1446,6 +1637,61 @@ async function sincronizarPendientes() {
                     'conflictos-sync.json'
                 );
 
+                const conflictoHash =
+                    await generarHash({
+                        expediente:
+                            item.fila[1],
+
+                        online:
+                            fechaOnline,
+
+                        local:
+                            item.fecha
+                    });
+
+                await subirLogSheets({
+
+                    logId:
+                        crypto.randomUUID(),
+
+                    fecha:
+                        new Date().toLocaleString(),
+
+                    usuario:
+                        localStorage.getItem('usuario') ||
+                        'desconocido',
+
+                    deviceId:
+                        DEVICE_ID,
+
+                    expedienteId:
+                        item.fila[0],
+
+                    campo:
+                        'CONFLICTO',
+
+                    valorAnterior:
+                        fechaOnline,
+
+                    valorNuevo:
+                        item.fecha,
+
+                    versionAnterior:
+                        fechaOnline,
+
+                    versionNueva:
+                        item.fecha,
+
+                    modo:
+                        'SYNC',
+
+                    estado:
+                        'CONFLICT',
+
+                    hash:
+                        conflictoHash
+                });
+
                 toast(
                     `Conflicto detectado en expediente ${item.fila[1]}`,
                     'error',
@@ -1468,6 +1714,7 @@ async function sincronizarPendientes() {
                             method: 'PUT',
 
                             headers: {
+
                                 Authorization:
                                     'Bearer ' + App.accessToken,
 
@@ -1485,6 +1732,62 @@ async function sincronizarPendientes() {
 
             await Promise.all(requests);
 
+            // LOG SYNC
+            const syncHash =
+                await generarHash({
+                    expediente:
+                        item.fila[1],
+
+                    estado:
+                        'SYNCED',
+
+                    fecha:
+                        new Date().toISOString()
+                });
+
+            await subirLogSheets({
+
+                logId:
+                    crypto.randomUUID(),
+
+                fecha:
+                    new Date().toLocaleString(),
+
+                usuario:
+                    localStorage.getItem('usuario') ||
+                    'desconocido',
+
+                deviceId:
+                    DEVICE_ID,
+
+                expedienteId:
+                    item.fila[0],
+
+                campo:
+                    'SYNC',
+
+                valorAnterior:
+                    '',
+
+                valorNuevo:
+                    'Sincronización completada',
+
+                versionAnterior:
+                    item.fecha,
+
+                versionNueva:
+                    new Date().toLocaleString(),
+
+                modo:
+                    'SYNC',
+
+                estado:
+                    'SYNCED',
+
+                hash:
+                    syncHash
+            });
+
             // ELIMINAR DE QUEUE
             await eliminarQueueItem(
                 item.queueId
@@ -1492,7 +1795,10 @@ async function sincronizarPendientes() {
 
         } catch (e) {
 
-            console.error(e);
+            console.error(
+                'Error sincronizando:',
+                e
+            );
         }
     }
 
