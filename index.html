@@ -422,7 +422,13 @@ const PAGE_SIZE = 20; // expedientes por página
 // ── Estado de la app (encapsulado, fuera de window) ──
 const App = {
     tokenClient : null,
-    accessToken : null,   // vive SOLO en memoria, nunca en localStorage
+
+    accessToken :
+        sessionStorage.getItem('accessToken') || null,
+
+    tokenExpira :
+        parseInt(sessionStorage.getItem('tokenExpira') || '0'),
+
     rawData     : [],
     filtrados   : [],
     paginaActual: 1,
@@ -483,7 +489,14 @@ function normalizar(texto) {
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]/g, '');
 }
+function tokenVigente() {
 
+    return (
+        App.accessToken &&
+        App.tokenExpira &&
+        Date.now() < App.tokenExpira
+    );
+}
 // ════════════════════════════════════════════════════════════
 // AUTENTICACIÓN — token solo en memoria (sin localStorage)
 // ════════════════════════════════════════════════════════════
@@ -494,20 +507,30 @@ window.initGis = function () {
         callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
                 App.accessToken = tokenResponse.access_token;
-                // Programar renovación automática antes de que expire (55 min)
-                setTimeout(renovarToken, 55 * 60 * 1000);
-                entrarApp();
-            } else {
-                toast('No se pudo obtener acceso. Intenta de nuevo.', 'error');
-            }
-        },
-        error_callback: (err) => {
-            console.error('OAuth error:', err);
-            toast('Error de autenticación: ' + (err.message || err.type || 'desconocido'), 'error');
-        }
-    });
-};
 
+// Mantener sesión 4 horas
+App.tokenExpira = Date.now() + (4 * 60 * 60 * 1000);
+
+sessionStorage.setItem(
+    'accessToken',
+    App.accessToken
+);
+
+sessionStorage.setItem(
+    'tokenExpira',
+    App.tokenExpira.toString()
+);
+
+// Renovar token OAuth antes de expirar
+setTimeout(
+    renovarToken,
+    55 * 60 * 1000
+);
+
+// Entrar a la app
+entrarApp();
+
+              
 function renovarToken() {
     // Solicita nuevo token silenciosamente (sin popup) si el usuario sigue activo
     if (App.tokenClient) {
@@ -524,12 +547,21 @@ window.iniciarSesion = () => {
 };
 
 window.cerrarSesion = () => {
-    // Revocar el token activo en Google antes de limpiar
+
     if (App.accessToken) {
-        google.accounts.oauth2.revoke(App.accessToken, () => {
-            App.accessToken = null;
-        });
+
+        google.accounts.oauth2.revoke(
+            App.accessToken,
+            () => {}
+        );
     }
+
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('tokenExpira');
+
+    App.accessToken = null;
+    App.tokenExpira = 0;
+
     location.reload();
 };
 
@@ -1086,6 +1118,14 @@ window.guardarCambios = async function () {
 // ════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
-<script src="https://accounts.google.com/gsi/client" onload="window.initGis()"></script>
+<script>
+window.addEventListener('load', () => {
+    if (tokenVigente()) {
+        entrarApp();
+    }
+});
+</script>  
+<script src="https://accounts.google.com/gsi/client" onload="window.initGis()">
+</script>
 </body>
 </html>
