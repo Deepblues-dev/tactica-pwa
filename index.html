@@ -1116,8 +1116,23 @@ window.guardarCambios = async function () {
 // ════════════════════════════════════════════════════════════
 // SERVICE WORKER
 // ════════════════════════════════════════════════════════════
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-</script>
+if ('serviceWorker' in navigator) {
+
+    window.addEventListener('load', async () => {
+
+        try {
+
+            const registration = await navigator.serviceWorker.register('./sw.js');
+
+            console.log('SW registrado:', registration.scope);
+
+        } catch (error) {
+
+            console.error('Error SW:', error);
+        }
+    });
+}
+              </script>
 <script>
 window.addEventListener('load', () => {
     if (tokenVigente()) {
