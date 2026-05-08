@@ -1173,11 +1173,12 @@ window.abrirEditor = function (index) {
 
 window.guardarCambios = async function () {
 
-    if (!App.accessToken) {
-        toast('Sesión expirada.', 'warning');
-        return;
+    if (!navigator.onLine && !App.accessToken) {
+    // Offline sin token: permitido
+} else if (navigator.onLine && !App.accessToken) {
+    toast('Sesión expirada.', 'warning');
+    return;
     }
-
     const rowIndex = document.getElementById('edit-row-index').value;
 
     const tipoRevision =
@@ -1405,7 +1406,15 @@ for (const u of updates) {
             );
         });
 
-        await Promise.all(requests);
+        const responses = await Promise.all(requests);
+
+for (const response of responses) {
+    if (!response.ok) {
+        throw new Error(
+            `Error Google Sheets: ${response.status}`
+        );
+    }
+  }
 
         toast(
             'Expediente actualizado.',
@@ -1422,9 +1431,10 @@ for (const u of updates) {
     console.error(e);
 
     toast(
-        'No se pudo guardar.',
-        'error'
-    );
+    'No se pudo guardar: ' + (e.message || ''),
+    'error',
+    7000
+);
 }
 };
 
