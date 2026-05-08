@@ -1190,26 +1190,26 @@ window.guardarCambios = async function () {
         String(ahora.getMinutes()).padStart(2, '0') + ':' +
         String(ahora.getSeconds()).padStart(2, '0');
 
+    const filaOriginal =
+    App.rawData[rowIndex - 1];
+
+    const filaNueva =
+    [...filaOriginal];
+  
     const updates = [];
 
-    function pushUpdate(col, value) {
+function pushUpdate(col, value) {
 
-        updates.push(
-            fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${col}${rowIndex}?valueInputOption=USER_ENTERED`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': 'Bearer ' + App.accessToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        values: [[value]]
-                    })
-                }
-            )
-        );
-    }
+    const index =
+        col.charCodeAt(0) - 65;
+
+    filaNueva[index] = value;
+
+    updates.push({
+        col,
+        value
+    });
+}
 
     if (!completo) {
 
@@ -1242,20 +1242,102 @@ window.guardarCambios = async function () {
 
     try {
 
-        await Promise.all(updates);
+    // ACTUALIZAR LOCAL SIEMPRE
+    await actualizarExpedienteLocal(
+        parseInt(filaNueva[0]),
+        filaNueva
+    );
 
-        toast('Expediente actualizado.', 'success');
+    // ACTUALIZAR MEMORIA
+    App.rawData[rowIndex - 1] =
+        filaNueva;
 
-        modalEdit.hide();
+    // LOG LOCAL
+    await registrarLog({
 
-        consultarDatos();
+        expediente: filaNueva[1],
 
-    } catch (e) {
+        fecha,
 
-        console.error(e);
+        tipoRevision,
 
-        toast('No se pudo guardar.', 'error');
+        usuario: 'pendiente',
+
+        cambios: updates
+    });
+
+    // OFFLINE
+    if (!navigator.onLine) {
+
+        await agregarCambioQueue({
+
+            rowIndex,
+
+            expedienteId: filaNueva[0],
+
+            fila: filaNueva,
+
+            updates,
+
+            fecha
+        });
+
+        await exportarPendientes();
+
+        toast(
+            'Guardado offline. Pendiente de sincronización.',
+            'warning',
+            5000
+        );
+
+    } else {
+
+        // ONLINE
+        const requests = [];
+
+        updates.forEach(u => {
+
+            requests.push(
+
+                fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
+                    {
+                        method: 'PUT',
+
+                        headers: {
+                            'Authorization': 'Bearer ' + App.accessToken,
+                            'Content-Type': 'application/json'
+                        },
+
+                        body: JSON.stringify({
+                            values: [[u.value]]
+                        })
+                    }
+                )
+            );
+        });
+
+        await Promise.all(requests);
+
+        toast(
+            'Expediente actualizado.',
+            'success'
+        );
     }
+
+    modalEdit.hide();
+
+    renderCards(App.filtrados);
+
+} catch (e) {
+
+    console.error(e);
+
+    toast(
+        'No se pudo guardar.',
+        'error'
+    );
+}
 };
 
 // ════════════════════════════════════════════════════════════
@@ -1314,11 +1396,111 @@ window.addEventListener('offline', () => {
 
 async function sincronizarPendientes() {
 
-    console.log(
-        'Sincronización pendiente...'
+    if (!navigator.onLine) {
+        return;
+    }
+
+    const pendientes =
+        await obtenerQueuePendiente();
+
+    if (!pendientes.length) {
+        return;
+    }
+
+    toast(
+        `Sincronizando ${pendientes.length} cambios...`,
+        'warning',
+        4000
+    );
+
+    for (const item of pendientes) {
+
+        try {
+
+            // VERIFICAR VERSIÓN ONLINE
+            const response = await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${item.rowIndex}`,
+                {
+                    headers: {
+                        Authorization:
+                            'Bearer ' + App.accessToken
+                    }
+                }
+            );
+
+            const data =
+                await response.json();
+
+            const fechaOnline =
+                data.values?.[0]?.[0] || '';
+
+            // CONFLICTO
+            if (
+                fechaOnline &&
+                fechaOnline !== item.fecha
+            ) {
+
+                item.conflicto = true;
+
+                await exportarPendientes(
+                    'conflictos-sync.json'
+                );
+
+                toast(
+                    `Conflicto detectado en expediente ${item.fila[1]}`,
+                    'error',
+                    7000
+                );
+
+                continue;
+            }
+
+            // SUBIR CAMBIOS
+            const requests = [];
+
+            item.updates.forEach(u => {
+
+                requests.push(
+
+                    fetch(
+                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${item.rowIndex}?valueInputOption=USER_ENTERED`,
+                        {
+                            method: 'PUT',
+
+                            headers: {
+                                Authorization:
+                                    'Bearer ' + App.accessToken,
+
+                                'Content-Type':
+                                    'application/json'
+                            },
+
+                            body: JSON.stringify({
+                                values: [[u.value]]
+                            })
+                        }
+                    )
+                );
+            });
+
+            await Promise.all(requests);
+
+            // ELIMINAR DE QUEUE
+            await eliminarQueueItem(
+                item.queueId
+            );
+
+        } catch (e) {
+
+            console.error(e);
+        }
+    }
+
+    toast(
+        'Sincronización finalizada',
+        'success'
     );
 }
-
 </script>
 </body>
 </html>
