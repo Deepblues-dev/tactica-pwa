@@ -1353,20 +1353,7 @@ for (const u of updates) {
     App.rawData[rowIndex - 1] =
         filaNueva;
 
-    // LOG LOCAL
-    await registrarLog({
-
-        expediente: filaNueva[1],
-
-        fecha,
-
-        tipoRevision,
-
-        usuario: 'pendiente',
-
-        cambios: updates
-    });
-
+ 
     // OFFLINE
     if (!navigator.onLine) {
 
