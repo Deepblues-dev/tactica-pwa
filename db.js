@@ -118,17 +118,29 @@ async function cargarExpedientesLocal() {
 // AGREGAR CAMBIO A QUEUE
 async function agregarCambioQueue(data) {
 
-    const tx = db.transaction(
-        'queue',
-        'readwrite'
-    );
+    return new Promise((resolve, reject) => {
 
-    const store = tx.objectStore('queue');
+        const tx = db.transaction(
+            'queue',
+            'readwrite'
+        );
 
-    store.add({
-        ...data,
-        synced: false,
-        createdAt: Date.now()
+        const store = tx.objectStore('queue');
+
+        const request = store.add({
+
+            ...data,
+
+            synced: false,
+
+            conflicto: false,
+
+            createdAt: Date.now()
+        });
+
+        request.onsuccess = () => resolve();
+
+        request.onerror = reject;
     });
 }
 
@@ -154,5 +166,87 @@ async function obtenerQueuePendiente() {
         };
 
         request.onerror = reject;
+    });
+}
+// ACTUALIZAR EXPEDIENTE LOCAL
+async function actualizarExpedienteLocal(id, filaNueva) {
+
+    const tx = db.transaction(
+        'expedientes',
+        'readwrite'
+    );
+
+    const store = tx.objectStore('expedientes');
+
+    store.put({
+        id,
+        fila: filaNueva
+    });
+}
+
+// ELIMINAR ITEM DE QUEUE
+async function eliminarQueueItem(queueId) {
+
+    const tx = db.transaction(
+        'queue',
+        'readwrite'
+    );
+
+    const store = tx.objectStore('queue');
+
+    store.delete(queueId);
+}
+
+// EXPORTAR PENDIENTES
+async function exportarPendientes(nombre = 'pendientes-sync.json') {
+
+    const pendientes =
+        await obtenerQueuePendiente();
+
+    if (!pendientes.length) {
+        return;
+    }
+
+    const blob = new Blob(
+        [
+            JSON.stringify(
+                pendientes,
+                null,
+                2
+            )
+        ],
+        {
+            type: 'application/json'
+        }
+    );
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement('a');
+
+    a.href = url;
+
+    a.download = nombre;
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// REGISTRAR LOG LOCAL
+async function registrarLog(log) {
+
+    const tx = db.transaction(
+        'logs',
+        'readwrite'
+    );
+
+    const store = tx.objectStore('logs');
+
+    store.add({
+        ...log,
+        createdAt: Date.now()
     });
 }
