@@ -587,7 +587,9 @@ function tokenVigente() {
 // AUTENTICACIÓN — token solo en memoria (sin localStorage)
 // ════════════════════════════════════════════════════════════
   window.initGis = function () {
-
+    
+    initDB();
+    
     App.tokenClient = google.accounts.oauth2.initTokenClient({
 
         client_id: CLIENT_ID,
@@ -676,7 +678,43 @@ function entrarApp() {
 // DATOS
 // ════════════════════════════════════════════════════════════
 async function consultarDatos() {
-    if (!App.accessToken) { toast('Sesión expirada. Ingresa de nuevo.', 'warning'); window.cerrarSesion(); return; }
+
+  // SIN INTERNET
+if (!navigator.onLine) {
+
+    toast(
+        'Modo offline activo',
+        'warning'
+    );
+
+    const datosLocales =
+        await cargarExpedientesLocal();
+
+    if (datosLocales.length > 0) {
+
+        App.rawData = [COLUMNAS, ...datosLocales];
+
+        prepararFiltros();
+
+        App.paginaActual = 1;
+
+        App.filtrados = App.rawData.slice(1);
+
+        window.aplicarFiltroFinal();
+
+        return;
+    }
+
+    toast(
+        'No existen datos guardados localmente.',
+        'error'
+    );
+
+    return;
+}
+
+// SIN TOKEN
+if (!App.accessToken) { toast('Sesión expirada. Ingresa de nuevo.', 'warning'); window.cerrarSesion(); return; }
     
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
     try {
@@ -696,6 +734,7 @@ async function consultarDatos() {
         const data = await response.json();
         if (data.values && data.values.length > 1) {
             App.rawData = data.values;
+            await guardarExpedientesLocal(data.values);
             prepararFiltros();
             App.paginaActual = 1;
             App.filtrados = App.rawData.slice(1);
@@ -1237,6 +1276,43 @@ if ('serviceWorker' in navigator) {
 
 </script>  
 <script src="https://accounts.google.com/gsi/client" onload="window.initGis()">
+</script>
+
+<script>
+// ═══════════════════════════════════════
+// ONLINE / OFFLINE
+// ═══════════════════════════════════════
+
+window.addEventListener('online', () => {
+
+    toast(
+        'Conexión restaurada',
+        'success'
+    );
+
+    sincronizarPendientes();
+});
+
+window.addEventListener('offline', () => {
+
+    toast(
+        'Trabajando sin internet',
+        'warning',
+        5000
+    );
+});
+
+// ═══════════════════════════════════════
+// SYNC PLACEHOLDER
+// ═══════════════════════════════════════
+
+async function sincronizarPendientes() {
+
+    console.log(
+        'Sincronización pendiente...'
+    );
+}
+
 </script>
 </body>
 </html>
