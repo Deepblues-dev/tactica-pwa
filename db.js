@@ -1,9 +1,11 @@
 const DB_NAME = 'tactica-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let db;
 
+// ═══════════════════════════════════════
 // INICIALIZAR DB
+// ═══════════════════════════════════════
 async function initDB() {
 
     return new Promise((resolve, reject) => {
@@ -17,38 +19,88 @@ async function initDB() {
 
             db = e.target.result;
 
+            // ═══════════════════════════════
             // EXPEDIENTES
+            // ═══════════════════════════════
             if (!db.objectStoreNames.contains('expedientes')) {
 
-                db.createObjectStore(
-                    'expedientes',
-                    {
-                        keyPath: 'id'
-                    }
+                const expedienteStore =
+                    db.createObjectStore(
+                        'expedientes',
+                        {
+                            keyPath: 'id'
+                        }
+                    );
+
+                expedienteStore.createIndex(
+                    'id',
+                    'id',
+                    { unique: true }
                 );
             }
 
+            // ═══════════════════════════════
             // QUEUE
+            // ═══════════════════════════════
             if (!db.objectStoreNames.contains('queue')) {
 
-                db.createObjectStore(
-                    'queue',
-                    {
-                        keyPath: 'queueId',
-                        autoIncrement: true
-                    }
+                const queueStore =
+                    db.createObjectStore(
+                        'queue',
+                        {
+                            keyPath: 'queueId',
+                            autoIncrement: true
+                        }
+                    );
+
+                queueStore.createIndex(
+                    'synced',
+                    'synced',
+                    { unique: false }
+                );
+
+                queueStore.createIndex(
+                    'createdAt',
+                    'createdAt',
+                    { unique: false }
+                );
+
+                queueStore.createIndex(
+                    'conflicto',
+                    'conflicto',
+                    { unique: false }
                 );
             }
 
+            // ═══════════════════════════════
             // LOGS
+            // ═══════════════════════════════
             if (!db.objectStoreNames.contains('logs')) {
 
-                db.createObjectStore(
-                    'logs',
-                    {
-                        keyPath: 'logId',
-                        autoIncrement: true
-                    }
+                const logsStore =
+                    db.createObjectStore(
+                        'logs',
+                        {
+                            keyPath: 'logId'
+                        }
+                    );
+
+                logsStore.createIndex(
+                    'fecha',
+                    'fecha',
+                    { unique: false }
+                );
+
+                logsStore.createIndex(
+                    'expedienteId',
+                    'expedienteId',
+                    { unique: false }
+                );
+
+                logsStore.createIndex(
+                    'estado',
+                    'estado',
+                    { unique: false }
                 );
             }
         };
@@ -56,39 +108,60 @@ async function initDB() {
         request.onsuccess = e => {
 
             db = e.target.result;
+
             resolve();
         };
 
         request.onerror = e => {
 
-            console.error(e);
+            console.error(
+                'IndexedDB Error:',
+                e
+            );
+
             reject(e);
         };
     });
 }
 
+// ═══════════════════════════════════════
 // GUARDAR EXPEDIENTES
+// ═══════════════════════════════════════
 async function guardarExpedientesLocal(filas) {
 
-    const tx = db.transaction(
-        'expedientes',
-        'readwrite'
-    );
+    return new Promise((resolve, reject) => {
 
-    const store = tx.objectStore('expedientes');
+        const tx = db.transaction(
+            'expedientes',
+            'readwrite'
+        );
 
-    await store.clear();
+        const store =
+            tx.objectStore('expedientes');
 
-    filas.slice(1).forEach(f => {
+        store.clear();
 
-        store.put({
-            id: parseInt(f[0]),
-            fila: f
+        filas.slice(1).forEach(f => {
+
+            store.put({
+
+                id:
+                    parseInt(f[0]),
+
+                fila:
+                    f
+            });
         });
+
+        tx.oncomplete = () => resolve();
+
+        tx.onerror = e => reject(e);
     });
 }
 
+// ═══════════════════════════════════════
 // LEER EXPEDIENTES
+// ═══════════════════════════════════════
 async function cargarExpedientesLocal() {
 
     return new Promise((resolve, reject) => {
@@ -98,15 +171,22 @@ async function cargarExpedientesLocal() {
             'readonly'
         );
 
-        const store = tx.objectStore('expedientes');
+        const store =
+            tx.objectStore('expedientes');
 
-        const request = store.getAll();
+        const request =
+            store.getAll();
 
         request.onsuccess = () => {
 
             resolve(
+
                 request.result
-                    .sort((a, b) => a.id - b.id)
+
+                    .sort(
+                        (a, b) => a.id - b.id
+                    )
+
                     .map(x => x.fila)
             );
         };
@@ -115,7 +195,41 @@ async function cargarExpedientesLocal() {
     });
 }
 
+// ═══════════════════════════════════════
+// ACTUALIZAR EXPEDIENTE LOCAL
+// ═══════════════════════════════════════
+async function actualizarExpedienteLocal(
+    id,
+    filaNueva
+) {
+
+    return new Promise((resolve, reject) => {
+
+        const tx = db.transaction(
+            'expedientes',
+            'readwrite'
+        );
+
+        const store =
+            tx.objectStore('expedientes');
+
+        const request = store.put({
+
+            id,
+
+            fila:
+                filaNueva
+        });
+
+        request.onsuccess = () => resolve();
+
+        request.onerror = reject;
+    });
+}
+
+// ═══════════════════════════════════════
 // AGREGAR CAMBIO A QUEUE
+// ═══════════════════════════════════════
 async function agregarCambioQueue(data) {
 
     return new Promise((resolve, reject) => {
@@ -125,9 +239,10 @@ async function agregarCambioQueue(data) {
             'readwrite'
         );
 
-        const store = tx.objectStore('queue');
+        const store =
+            tx.objectStore('queue');
 
-        const request = store.add({
+        const request = store.put({
 
             ...data,
 
@@ -135,7 +250,8 @@ async function agregarCambioQueue(data) {
 
             conflicto: false,
 
-            createdAt: Date.now()
+            createdAt:
+                Date.now()
         });
 
         request.onsuccess = () => resolve();
@@ -144,7 +260,9 @@ async function agregarCambioQueue(data) {
     });
 }
 
+// ═══════════════════════════════════════
 // LEER QUEUE
+// ═══════════════════════════════════════
 async function obtenerQueuePendiente() {
 
     return new Promise((resolve, reject) => {
@@ -154,51 +272,56 @@ async function obtenerQueuePendiente() {
             'readonly'
         );
 
-        const store = tx.objectStore('queue');
+        const store =
+            tx.objectStore('queue');
 
-        const request = store.getAll();
+        const request =
+            store.getAll();
 
         request.onsuccess = () => {
 
             resolve(
-                request.result.filter(x => !x.synced)
+
+                request.result.filter(
+                    x => !x.synced
+                )
             );
         };
 
         request.onerror = reject;
     });
 }
-// ACTUALIZAR EXPEDIENTE LOCAL
-async function actualizarExpedienteLocal(id, filaNueva) {
 
-    const tx = db.transaction(
-        'expedientes',
-        'readwrite'
-    );
+// ═══════════════════════════════════════
+// ELIMINAR ITEM DE QUEUE
+// ═══════════════════════════════════════
+async function eliminarQueueItem(queueId) {
 
-    const store = tx.objectStore('expedientes');
+    return new Promise((resolve, reject) => {
 
-    store.put({
-        id,
-        fila: filaNueva
+        const tx = db.transaction(
+            'queue',
+            'readwrite'
+        );
+
+        const store =
+            tx.objectStore('queue');
+
+        const request =
+            store.delete(queueId);
+
+        request.onsuccess = () => resolve();
+
+        request.onerror = reject;
     });
 }
 
-// ELIMINAR ITEM DE QUEUE
-async function eliminarQueueItem(queueId) {
-
-    const tx = db.transaction(
-        'queue',
-        'readwrite'
-    );
-
-    const store = tx.objectStore('queue');
-
-    store.delete(queueId);
-}
-
+// ═══════════════════════════════════════
 // EXPORTAR PENDIENTES
-async function exportarPendientes(nombre = 'pendientes-sync.json') {
+// ═══════════════════════════════════════
+async function exportarPendientes(
+    nombre = 'pendientes-sync.json'
+) {
 
     const pendientes =
         await obtenerQueuePendiente();
@@ -208,6 +331,7 @@ async function exportarPendientes(nombre = 'pendientes-sync.json') {
     }
 
     const blob = new Blob(
+
         [
             JSON.stringify(
                 pendientes,
@@ -215,8 +339,10 @@ async function exportarPendientes(nombre = 'pendientes-sync.json') {
                 2
             )
         ],
+
         {
-            type: 'application/json'
+            type:
+                'application/json'
         }
     );
 
@@ -235,18 +361,31 @@ async function exportarPendientes(nombre = 'pendientes-sync.json') {
     URL.revokeObjectURL(url);
 }
 
+// ═══════════════════════════════════════
 // REGISTRAR LOG LOCAL
+// ═══════════════════════════════════════
 async function registrarLog(log) {
 
-    const tx = db.transaction(
-        'logs',
-        'readwrite'
-    );
+    return new Promise((resolve, reject) => {
 
-    const store = tx.objectStore('logs');
+        const tx = db.transaction(
+            'logs',
+            'readwrite'
+        );
 
-    store.add({
-        ...log,
-        createdAt: Date.now()
+        const store =
+            tx.objectStore('logs');
+
+        const request = store.put({
+
+            ...log,
+
+            createdAt:
+                Date.now()
+        });
+
+        request.onsuccess = () => resolve();
+
+        request.onerror = reject;
     });
 }
