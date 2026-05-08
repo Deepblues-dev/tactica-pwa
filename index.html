@@ -424,11 +424,11 @@ const App = {
     tokenClient : null,
 
     accessToken :
-        sessionStorage.getItem('accessToken') || null,
+    localStorage.getItem('accessToken') || null,
 
-    tokenExpira :
-        parseInt(sessionStorage.getItem('tokenExpira') || '0'),
-
+tokenExpira :
+    parseInt(localStorage.getItem('tokenExpira') || '0'),
+  
     rawData     : [],
     filtrados   : [],
     paginaActual: 1,
@@ -500,37 +500,51 @@ function tokenVigente() {
 // ════════════════════════════════════════════════════════════
 // AUTENTICACIÓN — token solo en memoria (sin localStorage)
 // ════════════════════════════════════════════════════════════
-window.initGis = function () {
+  window.initGis = function () {
+
     App.tokenClient = google.accounts.oauth2.initTokenClient({
+
         client_id: CLIENT_ID,
+
         scope: 'https://www.googleapis.com/auth/spreadsheets',
+
         callback: (tokenResponse) => {
+
             if (tokenResponse && tokenResponse.access_token) {
+
                 App.accessToken = tokenResponse.access_token;
 
-// Mantener sesión 4 horas
-App.tokenExpira = Date.now() + (4 * 60 * 60 * 1000);
+                // Mantener sesión 4 horas
+                App.tokenExpira =
+                    Date.now() + (4 * 60 * 60 * 1000);
 
-sessionStorage.setItem(
-    'accessToken',
-    App.accessToken
-);
+                localStorage.setItem(
+                    'accessToken',
+                    App.accessToken
+                );
 
-sessionStorage.setItem(
-    'tokenExpira',
-    App.tokenExpira.toString()
-);
+                localStorage.setItem(
+                    'tokenExpira',
+                    App.tokenExpira.toString()
+                );
 
-// Renovar token OAuth antes de expirar
-setTimeout(
-    renovarToken,
-    55 * 60 * 1000
-);
+                // Renovar token antes de expirar
+                setTimeout(
+                    renovarToken,
+                    55 * 60 * 1000
+                );
 
-// Entrar a la app
-entrarApp();
+                entrarApp();
+            }
+        }
+    });
 
-              
+    // Auto login si token sigue vigente
+    if (tokenVigente()) {
+
+        entrarApp();
+    }
+};
 function renovarToken() {
     // Solicita nuevo token silenciosamente (sin popup) si el usuario sigue activo
     if (App.tokenClient) {
@@ -556,8 +570,8 @@ window.cerrarSesion = () => {
         );
     }
 
-    sessionStorage.removeItem('accessToken');
-    sessionStorage.removeItem('tokenExpira');
+   localStorage.removeItem('accessToken');
+   localStorage.removeItem('tokenExpira');
 
     App.accessToken = null;
     App.tokenExpira = 0;
@@ -1134,11 +1148,7 @@ if ('serviceWorker' in navigator) {
 }
               </script>
 <script>
-window.addEventListener('load', () => {
-    if (tokenVigente()) {
-        entrarApp();
-    }
-});
+
 </script>  
 <script src="https://accounts.google.com/gsi/client" onload="window.initGis()">
 </script>
