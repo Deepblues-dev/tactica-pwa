@@ -80,7 +80,7 @@
 }    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
 
     /* ── HEADER ── */
-    .nav-app { background: var(--navy); color: var(--white); padding: 12px 0; border-bottom: 1px solid var(--gold); }
+    .nav-app { background: var(--navy); color: var(--white); padding: 8px 10px;; border-bottom: 1px solid var(--gold); }
     .nav-app .container { display: flex; justify-content: space-between; align-items: center; }
     .header-right-group { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
     .btn-logout { background: transparent; border: none; color: white; padding: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: color 0.3s ease; text-decoration: none; }
@@ -210,42 +210,46 @@
       </div>
 
       <!-- TÍTULO CENTRADO -->
-      <div class="flex-grow-1 text-center">
+<div class="flex-grow-1 text-center">
 
-        <div style="
-            color:white;
-            font-weight:700;
-            font-size:0.9rem;
-            letter-spacing:1px;
-            display:inline-block;
-            padding-bottom:6px;
-            border-bottom:2px solid white;
-        ">
-          GESTIÓN DE EXPEDIENTES
-        </div>
+    <div style="
+        color:white;
+        font-weight:700;
+        font-size:0.95rem;
+        letter-spacing:1px;
+        white-space:nowrap;
+    ">
+        GESTIÓN DE EXPEDIENTES
+    </div>
 
-      </div>
+</div>
 
       <!-- LOGOUT -->
       <div>
 
         <button
-            class="btn-logout"
-            id="btn-logout-nav"
-            style="display:none;"
-            onclick="window.cerrarSesion()">
+    class="btn-logout"
+    id="btn-logout-nav"
+    style="
+        display:none;
+        align-items:center;
+        gap:6px;
+        white-space:nowrap;
+    "
+    onclick="window.cerrarSesion()">
 
-            <span class="material-symbols-outlined">
-                logout
-            </span>
+    <span class="material-symbols-outlined"
+          style="font-size:30px !important;">
+        logout
+    </span>
 
-            <span style="
-                font-size:0.9rem;
-                font-weight:700;
-                letter-spacing:1px;
-            ">
-                CERRAR SESIÓN
-            </span>
+    <span style="
+        font-size:0.82rem;
+        font-weight:700;
+        letter-spacing:0.5px;
+    ">
+        CERRAR SESIÓN
+    </span>
 
         </button>
 
