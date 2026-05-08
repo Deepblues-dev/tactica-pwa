@@ -195,19 +195,66 @@
 
 <!-- TOAST -->
 <div id="toast-container"></div>
-
 <!-- HEADER -->
 <nav class="nav-app shadow-sm">
-  <div class="container">
-    <img src="icon-192.png" class="logo-img" alt="Táctica Abogados">
-    <div class="header-right-group">
-        <div class="fw-bold" style="font-size: 0.9rem; letter-spacing: 1px;">GESTIÓN DE EXPEDIENTES</div>
-        <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="window.cerrarSesion()">
-            <div class="material-symbols-outlined">logout</div>
-            <span style="font-size: 0.8rem; font-weight: 600;">SALIR</span>
+
+  <div class="container-fluid px-3">
+
+    <div class="d-flex align-items-center justify-content-between w-100">
+
+      <!-- LOGO -->
+      <div>
+        <img src="logo.svg"
+             class="logo-img"
+             alt="Táctica Abogados">
+      </div>
+
+      <!-- TÍTULO CENTRADO -->
+      <div class="flex-grow-1 text-center">
+
+        <div style="
+            color:white;
+            font-weight:700;
+            font-size:1.2rem;
+            letter-spacing:2px;
+            display:inline-block;
+            padding-bottom:6px;
+            border-bottom:2px solid white;
+        ">
+          GESTIÓN DE EXPEDIENTES
+        </div>
+
+      </div>
+
+      <!-- LOGOUT -->
+      <div>
+
+        <button
+            class="btn-logout"
+            id="btn-logout-nav"
+            style="display:none;"
+            onclick="window.cerrarSesion()">
+
+            <span class="material-symbols-outlined">
+                logout
+            </span>
+
+            <span style="
+                font-size:0.9rem;
+                font-weight:700;
+                letter-spacing:1px;
+            ">
+                CERRAR SESIÓN
+            </span>
+
         </button>
+
+      </div>
+
     </div>
+
   </div>
+
 </nav>
 
 <!-- BUSCADOR -->
