@@ -520,10 +520,9 @@ localStorage.setItem(
 const App = {
     tokenClient : null,
 
-    accessToken :
-    localStorage.getItem('accessToken') || null,
-
-tokenExpira :
+    accessToken : null,
+  
+    tokenExpira :
     parseInt(localStorage.getItem('tokenExpira') || '0'),
   
     rawData     : [],
@@ -594,6 +593,52 @@ function tokenVigente() {
         Date.now() < App.tokenExpira
     );
 }
+  function ultimaValidacionVigente() {
+
+    const ultima =
+        parseInt(
+            localStorage.getItem('ultimaValidacion') || '0',
+            10
+        );
+
+    if (!ultima) {
+        return false;
+    }
+
+    const ahora = Date.now();
+
+    // 4 horas máximas sin validación
+    return (ahora - ultima) < (4 * 60 * 60 * 1000);
+}
+
+async function validarSesionPeriodicamente() {
+
+    // Sin conexión: permitir uso hasta 4 horas
+    if (!navigator.onLine) {
+
+        if (!ultimaValidacionVigente()) {
+            toast(
+                'La sesión debe validarse nuevamente.',
+                'warning',
+                6000
+            );
+            window.cerrarSesion();
+        }
+
+        return;
+    }
+
+    // Con conexión y token vigente
+    if (App.tokenClient && App.accessToken) {
+        try {
+            App.tokenClient.requestAccessToken({
+                prompt: ''
+            });
+        } catch (e) {
+            console.error('Error validando sesión:', e);
+        }
+    }
+}
 // ════════════════════════════════════════════════════════════
 // AUTENTICACIÓN — token solo en memoria (sin localStorage)
 // ════════════════════════════════════════════════════════════
@@ -624,31 +669,31 @@ function tokenVigente() {
                         Date.now() +
                         (4 * 60 * 60 * 1000);
 
-                    localStorage.setItem(
-                        'accessToken',
-                        App.accessToken
-                    );
+                  localStorage.setItem(
+                  'ultimaValidacion',
+                   Date.now().toString()
+                   );
 
                     localStorage.setItem(
                         'tokenExpira',
                         App.tokenExpira.toString()
                     );
 
-                    setTimeout(
-                        renovarToken,
-                        55 * 60 * 1000
-                    );
-
+                    // Validación automática cada 120 minutos
+                    setInterval(
+                    validarSesionPeriodicamente,
+                    120 * 60 * 1000
+);
                     entrarApp();
                 }
             }
         });
 
     // Auto login
-    if (tokenVigente()) {
-
-        entrarApp();
-    }
+   // Auto login
+if (tokenVigente() || ultimaValidacionVigente()) {
+    entrarApp();
+}
 };
 function renovarToken() {
     // Solicita nuevo token silenciosamente (sin popup) si el usuario sigue activo
@@ -675,8 +720,7 @@ window.cerrarSesion = () => {
         );
     }
 
-   localStorage.removeItem('accessToken');
-   localStorage.removeItem('tokenExpira');
+    localStorage.removeItem('tokenExpira');
 
     App.accessToken = null;
     App.tokenExpira = 0;
@@ -1173,269 +1217,282 @@ window.abrirEditor = function (index) {
 
 window.guardarCambios = async function () {
 
-    if (!navigator.onLine && !App.accessToken) {
-    // Offline sin token: permitido
-} else if (navigator.onLine && !App.accessToken) {
-    toast('Sesión expirada.', 'warning');
-    return;
-    }
-    const rowIndex = document.getElementById('edit-row-index').value;
+    // ==========================================================
+    // CONTROL DEL BOTÓN GUARDAR (spinner + disabled)
+    // ==========================================================
+    const btnGuardar = document.getElementById('btn-guardar');
+    const btnTexto   = document.getElementById('btn-guardar-txt');
+    const btnSpinner = document.getElementById('btn-guardar-spin');
 
-    const tipoRevision =
-        document.getElementById('tipo-revision').value;
-
-    if (!tipoRevision) {
-        toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
-        return;
-    }
-
-    const completo =
-        document.getElementById('toggle-edicion').checked;
-
-    const ahora = new Date();
-
-    const fecha =
-        String(ahora.getDate()).padStart(2, '0') + '/' +
-        String(ahora.getMonth() + 1).padStart(2, '0') + '/' +
-        ahora.getFullYear() + ' ' +
-        String(ahora.getHours()).padStart(2, '0') + ':' +
-        String(ahora.getMinutes()).padStart(2, '0') + ':' +
-        String(ahora.getSeconds()).padStart(2, '0');
-
-    const filaOriginal =
-    App.rawData[rowIndex - 1];
-
-    const filaNueva =
-    [...filaOriginal];
-  
-    const updates = [];
-
-function pushUpdate(col, value) {
-
-    const index =
-        col.charCodeAt(0) - 65;
-
-    filaNueva[index] = value;
-
-    updates.push({
-        col,
-        value
-    });
-}
-
-    if (!completo) {
-
-        pushUpdate('Y', document.getElementById('edit-nota').value);
-        pushUpdate('W', document.getElementById('edit-ubicacion').value);
-        pushUpdate('L', document.getElementById('edit-estado').value);
-        pushUpdate('U', document.getElementById('edit-termino').value);
-        pushUpdate('T', document.getElementById('edit-pendientes').value);
-        pushUpdate('S', document.getElementById('edit-observaciones').value);
-
-    } else {
-
-        document.querySelectorAll('.campo-completo')
-            .forEach(el => {
-
-                const index = parseInt(el.dataset.index);
-
-                const letra =
-                    String.fromCharCode(65 + index);
-
-                pushUpdate(letra, el.value);
-            });
-    }
-
-    // FECHA
-    pushUpdate('V', fecha);
-
-    // TIPO DE REVISIÓN
-    pushUpdate('X', tipoRevision);
-for (const u of updates) {
-
-    const index =
-        u.col.charCodeAt(0) - 65;
-
-    const nombreCampo =
-        COLUMNAS[index];
-
-    const valorAnterior =
-        filaOriginal[index] || '';
-
-    const valorNuevo =
-        u.value || '';
-
-    if (valorAnterior === valorNuevo) {
-        continue;
-    }
-
-    const versionAnterior =
-        filaOriginal[21] || '';
-
-    const versionNueva =
-        fecha;
-
-    const logBase = {
-
-        expediente:
-            filaNueva[1],
-
-        campo:
-            nombreCampo,
-
-        anterior:
-            valorAnterior,
-
-        nuevo:
-            valorNuevo,
-
-        versionAnterior,
-
-        versionNueva
+    const restaurarBoton = () => {
+        btnGuardar.disabled = false;
+        btnTexto.textContent = 'Guardar';
+        btnSpinner.style.display = 'none';
     };
 
-    const hash =
-        await generarHash(logBase);
+    btnGuardar.disabled = true;
+    btnTexto.textContent = 'Guardando...';
+    btnSpinner.style.display = 'inline-block';
 
-    const log = {
-
-        logId:
-            crypto.randomUUID(),
-
-        fecha,
-
-        usuario:
-            localStorage.getItem('usuario') ||
-            'desconocido',
-
-        deviceId:
-            DEVICE_ID,
-
-        expedienteId:
-            filaNueva[0],
-
-        campo:
-            nombreCampo,
-
-        valorAnterior,
-
-        valorNuevo,
-
-        versionAnterior,
-
-        versionNueva,
-
-        modo:
-            navigator.onLine
-                ? 'ONLINE'
-                : 'OFFLINE',
-
-        estado:
-            navigator.onLine
-                ? 'SYNCED'
-                : 'PENDING',
-
-        hash
-    };
-
-    await registrarLog(log);
-
-    await subirLogSheets(log);
-}
     try {
 
-    // ACTUALIZAR LOCAL SIEMPRE
-    await actualizarExpedienteLocal(
-        parseInt(filaNueva[0]),
-        filaNueva
-    );
+        // ======================================================
+        // VALIDACIÓN DE SESIÓN
+        // ======================================================
+        if (!navigator.onLine && !App.accessToken) {
+            // Offline sin token: permitido
+        } else if (navigator.onLine && !App.accessToken) {
+            toast('Sesión expirada.', 'warning');
+            restaurarBoton();
+            return;
+        }
 
-    // ACTUALIZAR MEMORIA
-    App.rawData[rowIndex - 1] =
-        filaNueva;
+        // ======================================================
+        // DATOS BÁSICOS
+        // ======================================================
+        const rowIndex = document.getElementById('edit-row-index').value;
 
- 
-    // OFFLINE
-    if (!navigator.onLine) {
+        const tipoRevision =
+            document.getElementById('tipo-revision').value;
 
-        await agregarCambioQueue({
+        if (!tipoRevision) {
+            toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
+            restaurarBoton();
+            return;
+        }
 
-            rowIndex,
+        const completo =
+            document.getElementById('toggle-edicion').checked;
 
+        const ahora = new Date();
+
+        const fecha =
+            String(ahora.getDate()).padStart(2, '0') + '/' +
+            String(ahora.getMonth() + 1).padStart(2, '0') + '/' +
+            ahora.getFullYear() + ' ' +
+            String(ahora.getHours()).padStart(2, '0') + ':' +
+            String(ahora.getMinutes()).padStart(2, '0') + ':' +
+            String(ahora.getSeconds()).padStart(2, '0');
+
+        const filaOriginal =
+            App.rawData[rowIndex - 1];
+
+        const filaNueva =
+            [...filaOriginal];
+
+        const updates = [];
+
+        function pushUpdate(col, value) {
+            const index = col.charCodeAt(0) - 65;
+            filaNueva[index] = value;
+            updates.push({
+                col,
+                value
+            });
+        }
+
+        // ======================================================
+        // CAPTURA DE CAMBIOS
+        // ======================================================
+        if (!completo) {
+
+            pushUpdate('Y', document.getElementById('edit-nota').value);
+            pushUpdate('W', document.getElementById('edit-ubicacion').value);
+            pushUpdate('L', document.getElementById('edit-estado').value);
+            pushUpdate('U', document.getElementById('edit-termino').value);
+            pushUpdate('T', document.getElementById('edit-pendientes').value);
+            pushUpdate('S', document.getElementById('edit-observaciones').value);
+
+        } else {
+
+            document.querySelectorAll('.campo-completo')
+                .forEach(el => {
+
+                    const index = parseInt(el.dataset.index, 10);
+                    const letra =
+                        String.fromCharCode(65 + index);
+
+                    pushUpdate(letra, el.value);
+                });
+        }
+
+        // Fecha de modificación
+        pushUpdate('V', fecha);
+
+        // Tipo de revisión
+        pushUpdate('X', tipoRevision);
+
+        // ======================================================
+        // DETERMINAR CAMBIOS REALES
+        // ======================================================
+        const cambiosReales = updates.filter(u => {
+            const index = u.col.charCodeAt(0) - 65;
+            const anterior = filaOriginal[index] || '';
+            const nuevo = u.value || '';
+            return anterior !== nuevo;
+        });
+
+        if (!cambiosReales.length) {
+            toast('No se detectaron cambios.', 'warning');
+            restaurarBoton();
+            return;
+        }
+
+        // ======================================================
+        // LOG ÚNICO POR EVENTO
+        // ======================================================
+        const camposModificados = cambiosReales.map(u => {
+            const index = u.col.charCodeAt(0) - 65;
+            return COLUMNAS[index];
+        });
+
+        const logBase = {
+            expediente: filaNueva[1],
+            campos: camposModificados,
+            totalCampos: camposModificados.length,
+            fecha,
+            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE'
+        };
+
+        const hash = await generarHash(logBase);
+
+        const log = {
+            logId: crypto.randomUUID(),
+            fecha,
+            usuario:
+                localStorage.getItem('usuario') ||
+                'desconocido',
+            deviceId: DEVICE_ID,
             expedienteId: filaNueva[0],
+            campo: `UPDATE (${camposModificados.length} campos)`,
+            valorAnterior: '',
+            valorNuevo: camposModificados.join(', '),
+            versionAnterior: filaOriginal[21] || '',
+            versionNueva: fecha,
+            modo:
+                navigator.onLine
+                    ? 'ONLINE'
+                    : 'OFFLINE',
+            estado:
+                navigator.onLine
+                    ? 'SYNCED'
+                    : 'PENDING',
+            hash
+        };
 
-            fila: filaNueva,
-
-            updates,
-
-            fecha
-        });
-
-        await exportarPendientes();
-
-        toast(
-            'Guardado offline. Pendiente de sincronización.',
-            'warning',
-            5000
+        // ======================================================
+        // GUARDAR LOCAL SIEMPRE
+        // ======================================================
+        await actualizarExpedienteLocal(
+            parseInt(filaNueva[0], 10),
+            filaNueva
         );
 
-    } else {
+        // Actualizar memoria
+        App.rawData[rowIndex - 1] = filaNueva;
 
-        // ONLINE
-        const requests = [];
+        // ======================================================
+        // MODO OFFLINE
+        // ======================================================
+        if (!navigator.onLine) {
 
-        updates.forEach(u => {
+            await agregarCambioQueue({
+                rowIndex,
+                expedienteId: filaNueva[0],
+                fila: filaNueva,
+                updates: cambiosReales,
+                fecha
+            });
 
-            requests.push(
+            // Registrar un solo log
+            await registrarLog(log);
 
-                fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
-                    {
-                        method: 'PUT',
+            // Programar exportación (15 min sin cambios)
+            if (typeof programarExportacionPendientes === 'function') {
+                programarExportacionPendientes();
+            }
 
-                        headers: {
-                            'Authorization': 'Bearer ' + App.accessToken,
-                            'Content-Type': 'application/json'
-                        },
-
-                        body: JSON.stringify({
-                            values: [[u.value]]
-                        })
-                    }
-                )
+            toast(
+                'Guardado offline. Pendiente de sincronización.',
+                'warning',
+                5000
             );
-        });
 
-        const responses = await Promise.all(requests);
+        } else {
 
-for (const response of responses) {
-    if (!response.ok) {
-        throw new Error(
-            `Error Google Sheets: ${response.status}`
-        );
-    }
-  }
+            // ==================================================
+            // MODO ONLINE
+            // ==================================================
+            const requests = [];
+
+            cambiosReales.forEach(u => {
+                requests.push(
+                    fetch(
+                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization':
+                                    'Bearer ' + App.accessToken,
+                                'Content-Type':
+                                    'application/json'
+                            },
+                            body: JSON.stringify({
+                                values: [[u.value]]
+                            })
+                        }
+                    )
+                );
+            });
+
+            const responses =
+                await Promise.all(requests);
+
+            for (const response of responses) {
+                if (!response.ok) {
+                    throw new Error(
+                        `Error Google Sheets: ${response.status}`
+                    );
+                }
+            }
+
+            // Registrar un solo log
+            await registrarLog(log);
+
+            // Subir un solo log
+            await subirLogSheets(log);
+
+            toast(
+                'Expediente actualizado.',
+                'success'
+            );
+        }
+
+        // ======================================================
+        // CERRAR MODAL
+        // ======================================================
+        modalEdit.hide();
+
+        // ======================================================
+        // RECONSTRUIR FILTROS Y REORDENAR
+        // (mueve la card al inicio o final según el orden)
+        // ======================================================
+        window.aplicarFiltroFinal();
+
+    } catch (e) {
+
+        console.error(e);
 
         toast(
-            'Expediente actualizado.',
-            'success'
+            'No se pudo guardar: ' + (e.message || ''),
+            'error',
+            7000
         );
+
+    } finally {
+
+        restaurarBoton();
     }
-
-    modalEdit.hide();
-
-    renderCards(App.filtrados);
-
-} catch (e) {
-
-    console.error(e);
-
-    toast(
-    'No se pudo guardar: ' + (e.message || ''),
-    'error',
-    7000
-);
-}
 };
 
 // ════════════════════════════════════════════════════════════
@@ -1465,6 +1522,47 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <script>
+  // ═══════════════════════════════════════
+// EXPORTACIÓN DIFERIDA DE PENDIENTES
+// ═══════════════════════════════════════
+
+let timerExportacionPendientes = null;
+
+// Programa la exportación 15 minutos después del último cambio offline
+function programarExportacionPendientes() {
+
+    if (timerExportacionPendientes) {
+        clearTimeout(timerExportacionPendientes);
+    }
+
+    timerExportacionPendientes = setTimeout(async () => {
+        try {
+            if (typeof exportarPendientes === 'function') {
+                await exportarPendientes();
+                console.log('Pendientes exportados automáticamente.');
+            }
+        } catch (e) {
+            console.error('Error al exportar pendientes:', e);
+        }
+    }, 15 * 60 * 1000); // 15 minutos
+}
+
+// Exportar al cerrar la app
+async function exportarPendientesAlCerrar() {
+    try {
+        if (typeof exportarPendientes === 'function') {
+            await exportarPendientes();
+        }
+    } catch (e) {
+        console.error('Error al exportar pendientes al cerrar:', e);
+    }
+}
+
+// pagehide es más confiable en iOS y PWA
+window.addEventListener('pagehide', exportarPendientesAlCerrar);
+
+// Respaldo adicional
+window.addEventListener('beforeunload', exportarPendientesAlCerrar);
 // ═══════════════════════════════════════
 // ONLINE / OFFLINE
 // ═══════════════════════════════════════
