@@ -612,6 +612,23 @@ function normalizar(texto) {
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]/g, '');
 }
+  async function generarHash(data) {
+    const texto = JSON.stringify(data);
+
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(texto);
+
+    const hashBuffer = await crypto.subtle.digest(
+        'SHA-256',
+        bytes
+    );
+
+    return Array.from(
+        new Uint8Array(hashBuffer)
+    )
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 function tokenVigente() {
 
     return (
@@ -716,7 +733,7 @@ async function validarSesionPeriodicamente() {
             }
         });
 
-    // Auto login
+
 // Auto login controlado
 if (tokenVigente()) {
     entrarApp();
@@ -724,6 +741,12 @@ if (tokenVigente()) {
 else if (!navigator.onLine && ultimaValidacionVigente()) {
     // Permitir acceso offline sin token
     entrarApp();
+}
+else if (navigator.onLine && ultimaValidacionVigente()) {
+    // Solicitar token silenciosamente sin mostrar consentimiento
+    App.tokenClient.requestAccessToken({
+        prompt: ''
+    });
 }
 };
 function renovarToken() {
@@ -1734,29 +1757,7 @@ async function subirLogSheets(log) {
         );
     }
 }
-async function generarHash(data) {
 
-    const texto =
-        JSON.stringify(data);
-
-    const encoder =
-        new TextEncoder();
-
-    const bytes =
-        encoder.encode(texto);
-
-    const hashBuffer =
-        await crypto.subtle.digest(
-            'SHA-256',
-            bytes
-        );
-
-    return Array.from(
-        new Uint8Array(hashBuffer)
-    )
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 // ═══════════════════════════════════════
 // SYNC PLACEHOLDER
 // ═══════════════════════════════════════
