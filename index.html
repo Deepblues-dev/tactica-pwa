@@ -1557,12 +1557,12 @@ async function exportarPendientesAlCerrar() {
         console.error('Error al exportar pendientes al cerrar:', e);
     }
 }
-
+// Exportación automática desactivada temporalmente.
+// Se reactivará en db.js con una estrategia segura.
 // pagehide es más confiable en iOS y PWA
-window.addEventListener('pagehide', exportarPendientesAlCerrar);
-
+// window.addEventListener('pagehide', exportarPendientesAlCerrar);
 // Respaldo adicional
-window.addEventListener('beforeunload', exportarPendientesAlCerrar);
+//window.addEventListener('beforeunload', exportarPendientesAlCerrar);
 // ═══════════════════════════════════════
 // ONLINE / OFFLINE
 // ═══════════════════════════════════════
@@ -1703,100 +1703,12 @@ async function sincronizarPendientes() {
 
         try {
 
-            // OBTENER VERSIÓN ONLINE
-            const response = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${item.rowIndex}`,
-                {
-                    headers: {
-                        Authorization:
-                            'Bearer ' + App.accessToken
-                    }
-                }
-            );
-
-            const data =
-                await response.json();
-
-            const fechaOnline =
-                data.values?.[0]?.[0] || '';
-
-            // CONFLICTO
-            if (
-                fechaOnline &&
-                fechaOnline !== item.fecha
-            ) {
-
-                item.conflicto = true;
-
-                await exportarPendientes(
-                    'conflictos-sync.json'
-                );
-
-                const conflictoHash =
-                    await generarHash({
-                        expediente:
-                            item.fila[1],
-
-                        online:
-                            fechaOnline,
-
-                        local:
-                            item.fecha
-                    });
-
-                await subirLogSheets({
-
-                    logId:
-                        crypto.randomUUID(),
-
-                    fecha:
-                        new Date().toLocaleString(),
-
-                    usuario:
-                        localStorage.getItem('usuario') ||
-                        'desconocido',
-
-                    deviceId:
-                        DEVICE_ID,
-
-                    expedienteId:
-                        item.fila[0],
-
-                    campo:
-                        'CONFLICTO',
-
-                    valorAnterior:
-                        fechaOnline,
-
-                    valorNuevo:
-                        item.fecha,
-
-                    versionAnterior:
-                        fechaOnline,
-
-                    versionNueva:
-                        item.fecha,
-
-                    modo:
-                        'SYNC',
-
-                    estado:
-                        'CONFLICT',
-
-                    hash:
-                        conflictoHash
-                });
-
-                toast(
-                    `Conflicto detectado en expediente ${item.fila[1]}`,
-                    'error',
-                    7000
-                );
-
-                continue;
-            }
-
-            // SUBIR CAMBIOS
+       // OBTENER VERSIÓN ONLINE
+           // Política temporal: LAST WRITE WINS.
+           // Los cambios offline siempre sobrescriben la versión online.
+           // La detección de conflictos se reimplementará posteriormente
+           // utilizando versionAnterior almacenada en la queue.
+       // SUBIR CAMBIOS
             const requests = [];
 
             item.updates.forEach(u => {
