@@ -135,6 +135,23 @@
     .btn-edit .material-symbols-outlined {
     font-size: 22px !important;
 }
+    .btn-add {
+    color: var(--gold);
+    cursor: pointer;
+    border: none;
+    background: none;
+
+    transform: scale(2);
+    transform-origin: center;
+
+    padding: 10px;
+    margin-right: 10px;
+    margin-top: 6px;
+}
+
+    .btn-add .material-symbols-outlined {
+    font-size: 22px !important;
+}
     .form-check-input:checked {
     background-color: var(--gold) !important;
     border-color: var(--gold) !important;
@@ -226,7 +243,17 @@
 
       <!-- LOGOUT -->
       <div>
+<button
+    class="btn-add"
+    id="btn-add-nav"
+    style="display:none;"
+    onclick="window.abrirNuevoExpediente()"
+    title="Nuevo expediente">
 
+    <span class="material-symbols-outlined">
+        add_circle
+    </span>
+</button>
         <button
     class="btn-logout"
     id="btn-logout-nav"
@@ -732,6 +759,7 @@ function entrarApp() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('search-bar').style.display = 'block';
     document.getElementById('btn-logout-nav').style.display = 'flex';
+    document.getElementById('btn-add-nav').style.display = 'block';
     consultarDatos();
 }
 
