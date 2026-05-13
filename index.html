@@ -13,7 +13,6 @@
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" type="image/png" href="icon-192.png">
   
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -22,159 +21,33 @@
     :root { --navy: #06152C; --gold: #C5A059; --white: #FFFFFF; }
     body { background-color: #F8F9FA; font-family: 'Inter', sans-serif; padding-bottom: 80px; }
 
-     /* ── BOTONES DE FISICO-DIGITAL ── */
-    .btn-revision {
+    .btn-revision { border: 2px solid var(--navy); color: var(--navy); background: white; font-weight: 700; letter-spacing: 0.5px; transition: all 0.2s ease; }
+    .btn-revision:hover { background: var(--navy); color: var(--gold); }
+    .btn-revision.activo { background: var(--navy) !important; color: var(--gold) !important; border-color: var(--navy) !important; }
 
-    border: 2px solid var(--navy);
-    color: var(--navy);
-    background: white;
+    #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #06152C !important; color: white; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .logo-img { width: auto; height:120px; object-fit: contain; }
+    .logo-splash { width: min(80vw, 360px); height: auto; aspect-ratio: 1 / 1; object-fit: contain; display: block; margin-bottom: 5px; }
+    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
 
-    font-weight: 700;
-    letter-spacing: 0.5px;
-
-    transition: all 0.2s ease;
-}
-
-.btn-revision:hover {
-
-    background: var(--navy);
-    color: var(--gold);
-}
-
-.btn-revision.activo {
-
-    background: var(--navy) !important;
-    color: var(--gold) !important;
-
-    border-color: var(--navy) !important;
-}
-    /* ── SPLASH ── */
-    #splash-screen {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: #06152C !important; color: white; z-index: 3000;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        text-align: center;
-    }
-    .logo-img {
-
-    width: auto;
-
-    height:120px;
-
-    object-fit: contain;
-
-  
-}    .logo-splash {
-
-    width: min(80vw, 360px);
-
-    height: auto;
-
-    aspect-ratio: 1 / 1;
-
-    object-fit: contain;
-
-    display: block;
-
-    margin-bottom: 5px;
-}    .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
-
-    /* ── HEADER ── */
-    .nav-app { background: var(--navy); color: var(--white); padding: 8px 10px;; border-bottom: 1px solid var(--gold); }
-    .nav-app .container { display: flex; justify-content: space-between; align-items: center; }
-    .header-right-group { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-    .btn-logout { background: transparent; border: none; color: white; padding: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: color 0.3s ease; text-decoration: none; }
-    .btn-logout .material-symbols-outlined { font-size: 35px !important; }
-    .btn-logout:hover { color: var(--gold) !important; }
-
-    /* ── SEARCH ── */
+    .nav-app { background: var(--navy); color: var(--white); padding: 8px 10px; border-bottom: 1px solid var(--gold); }
     .search-section { background: white; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; }
     .sub-filter-box { display: none; padding: 15px; margin-top: 10px; background: #f1f3f5; border-radius: 8px; border-left: 4px solid var(--navy); }
 
-    /* ── BOTONES DE FILTRO ── */
     .filter-btn-group { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
-    .filter-btn {
-        flex: 1; max-width: 130px;
-        padding: 7px 10px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.5px;
-        border: 2px solid var(--navy); border-radius: 6px;
-        background: white; color: var(--navy);
-        cursor: pointer; transition: all 0.18s ease;
-        display: flex; align-items: center; justify-content: center; gap: 5px;
-        box-shadow: 0 2px 0 #b0bec5;
-        user-select: none;
-    }
-    .filter-btn:active { transform: translateY(2px); box-shadow: none; }
-    .filter-btn.activo {
-        background: var(--navy); color: var(--gold);
-        box-shadow: inset 0 3px 6px rgba(0,0,0,0.35);
-        transform: translateY(2px);
-        border-color: var(--navy);
-    }
-    .filter-btn .material-symbols-outlined { font-size: 16px; }
+    .filter-btn { flex: 1; max-width: 130px; padding: 7px 10px; font-size: 0.78rem; font-weight: 700; border: 2px solid var(--navy); border-radius: 6px; background: white; color: var(--navy); cursor: pointer; transition: all 0.18s ease; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 0 #b0bec5; }
+    .filter-btn.activo { background: var(--navy); color: var(--gold); box-shadow: inset 0 3px 6px rgba(0,0,0,0.35); transform: translateY(2px); border-color: var(--navy); }
 
-    /* ── CARDS ── */
-    .card-exp { 
-      border: none; border-top: 4px solid var(--gold); 
-      border-radius: 8px; background: var(--white);
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; padding: 15px;
-    }
-    .btn-edit {
-    color: var(--gold);
-    cursor: pointer;
-    border: none;
-    background: none;
-
-    transform: scale(2);
-    transform-origin: center;
-
-    padding: 10px;
-    margin-right: 10px;
-    margin-top: 6px;
-    }
-
-    .btn-edit .material-symbols-outlined {
-    font-size: 22px !important;
-}
-    .form-check-input:checked {
-    background-color: var(--gold) !important;
-    border-color: var(--gold) !important;
-}
-
-.form-check-input:focus {
-    box-shadow: 0 0 0 0.2rem rgba(197,160,89,0.35) !important;
-}
-
-    /* ── PAGINACIÓN ── */
-    .pagination-bar { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .pagination-bar button { background: var(--navy); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; transition: background 0.2s; }
-    .pagination-bar button:disabled { background: #ccc; cursor: default; }
-    .pagination-bar button.active { background: var(--gold); font-weight: 700; }
-    .pagination-bar span { font-size: 0.8rem; color: #555; }
-    .pagination-info { text-align: center; font-size: 0.78rem; color: #888; margin-bottom: 8px; }
-
-    /* ── LOADING ── */
+    .card-exp { border: none; border-top: 4px solid var(--gold); border-radius: 8px; background: var(--white); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; padding: 15px; }
+    .btn-edit { color: var(--gold); cursor: pointer; border: none; background: none; transform: scale(2); padding: 10px; margin-right: 10px; }
+    
     #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:2000; padding-top:200px; text-align:center; }
-
-    /* ── TOAST DE ERRORES ── */
     #toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 280px; max-width: 90vw; }
     .toast-msg { padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; animation: slideUp 0.3s ease; }
     .toast-msg.success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
-    .toast-msg.error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+    .toast-msg.error { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
     .toast-msg.warning { background: #fef9c3; color: #854d0e; border-left: 4px solid #eab308; }
     @keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
- /* ── Imagenes e iconos cuadrados ── */
-    img {
-    max-width: 100%;
-    height: auto;
-    object-fit: contain;
-}
-    .icon,
-.app-icon,
-.pwa-icon {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
-}
   </style>
 </head>
 <body>
@@ -183,314 +56,105 @@
 <div id="splash-screen">
     <img src="icon-512.png" class="logo-splash" alt="Táctica Abogados">
     <hr class="linea-solida">
-    <p class="mb-4 opacity-75 fs-1">Gestión de expedientes</p>
-    <button class="btn btn-lg btn-outline-light px-5" onclick="window.iniciarSesion()" style="border-radius: 5px;">INGRESAR AL SISTEMA</button>
+    <p class="mb-4 opacity-75 fs-4">Gestión de expedientes</p>
+    <button class="btn btn-lg btn-outline-light px-5" onclick="window.iniciarSesion()">INGRESAR AL SISTEMA</button>
 </div>
 
 <!-- LOADING -->
 <div id="loading-overlay">
     <div class="spinner-border text-primary"></div>
-    <p class="mt-2 fw-bold">Procesando datos...</p>
+    <p class="mt-2 fw-bold">Procesando...</p>
 </div>
 
 <!-- TOAST -->
 <div id="toast-container"></div>
+
 <!-- HEADER -->
 <nav class="nav-app shadow-sm">
-
   <div class="container-fluid px-3">
-<div class="d-flex align-items-center justify-content-between w-100"
-     style="gap:8px;">
-      <!-- LOGO -->
-      <div style="padding-right:8px;">
-    <img src="icon-512.png"
-         class="logo-img"
-         alt="Táctica Abogados">
-      </div>
-
-      <!-- TÍTULO CENTRADO -->
-<div class="flex-grow-1 text-center"
-     style="padding:0 8px;">
-
-    <div style="
-        color:white;
-        font-weight:700;
-        font-size:0.95rem;
-        letter-spacing:1px;
-        white-space:nowrap;
-    ">
-        GESTIÓN DE EXPEDIENTES
+    <div class="d-flex align-items-center justify-content-between w-100">
+      <img src="icon-512.png" class="logo-img" alt="Táctica">
+      <div class="flex-grow-1 text-center text-white fw-bold small">GESTIÓN DE EXPEDIENTES</div>
+      <button class="btn-logout" id="btn-logout-nav" style="display:none;" onclick="window.cerrarSesion()">
+        <span class="material-symbols-outlined">logout</span>
+      </button>
     </div>
-
-</div>
-
-      <!-- LOGOUT -->
-      <div>
-
-        <button
-    class="btn-logout"
-    id="btn-logout-nav"
-    style="
-        display:none;
-        align-items:center;
-        gap:6px;
-        white-space:nowrap;
-        padding-left:20px;
-    "
-    onclick="window.cerrarSesion()">
-
-    <span class="material-symbols-outlined"
-          style="font-size:30px !important;">
-        logout
-    </span>
-
-    <span style="
-        font-size:0.82rem;
-        font-weight:700;
-        letter-spacing:0.5px;
-    ">
-        SALIR
-    </span>
-
-        </button>
-
-      </div>
-
-    </div>
-
   </div>
-
 </nav>
 
 <!-- BUSCADOR -->
 <div class="search-section shadow-sm" id="search-bar" style="display:none;">
     <div class="container">
-      <div class="d-flex justify-content-end mb-2">
-    <select id="orden-fecha" class="form-select form-select-sm" 
-        style="max-width: 220px;"
-        onchange="window.aplicarFiltroFinal()">
-
-        <option value="recientes" selected>
-            Movimientos recientes
-        </option>
-
-        <option value="antiguos">
-            Movimientos antiguos
-        </option>
-    </select>
-</div>
+        <div class="d-flex justify-content-end mb-2">
+            <select id="orden-fecha" class="form-select form-select-sm" style="max-width: 200px;" onchange="window.aplicarFiltroFinal()">
+                <option value="recientes" selected>Movimientos recientes</option>
+                <option value="antiguos">Movimientos antiguos</option>
+            </select>
+        </div>
         <div class="input-group mb-2">
-            <span class="input-group-text bg-white border-end-0"><span class="material-symbols-outlined text-muted">search</span></span>
-            <input type="text" id="busqG" class="form-control border-start-0" placeholder="Búsqueda global..." onkeyup="window.aplicarFiltroFinal()">
-            <button class="btn btn-outline-secondary border-start-0" type="button" onclick="window.resetearBusquedas()">
-                <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px;">refresh</span>
+            <input type="text" id="busqG" class="form-control" placeholder="Búsqueda global..." onkeyup="window.aplicarFiltroFinal()">
+            <button class="btn btn-outline-secondary" onclick="window.resetearBusquedas()">
+                <span class="material-symbols-outlined" style="font-size: 18px;">refresh</span>
             </button>
         </div>
-
         <div class="filter-btn-group">
-            <button class="filter-btn" id="btn-f-cliente" onclick="window.toggleCapas('cliente')">
-                <span class="material-symbols-outlined">person</span> CLIENTE
-            </button>
-            <button class="filter-btn" id="btn-f-fuero" onclick="window.toggleCapas('fuero')">
-                <span class="material-symbols-outlined">location_on</span> LUGAR
-            </button>
-            <button class="filter-btn" id="btn-f-exp" onclick="window.toggleCapas('exp')">
-                <span class="material-symbols-outlined">folder</span> EXPEDIENTE
-            </button>
+            <button class="filter-btn" id="btn-f-cliente" onclick="window.toggleCapas('cliente')">CLIENTE</button>
+            <button class="filter-btn" id="btn-f-fuero" onclick="window.toggleCapas('fuero')">LUGAR</button>
+            <button class="filter-btn" id="btn-f-exp" onclick="window.toggleCapas('exp')">EXPEDIENTE</button>
         </div>
-
-        <div id="area-filtros" style="display:none;" class="sub-filter-box mt-3">
-            <div id="capa-cliente" style="display:none;">
-                <label class="small fw-bold text-muted mb-1">Filtrar por Cliente</label>
-                <select id="sel-cliente" class="form-select mb-2" onchange="window.aplicarFiltroFinal()"></select>
-            </div>
+        <div id="area-filtros" class="sub-filter-box">
+            <div id="capa-cliente" style="display:none;"><select id="sel-cliente" class="form-select" onchange="window.aplicarFiltroFinal()"></select></div>
             <div id="capa-fuero" style="display:none;">
-                <label class="small fw-bold text-muted mb-1">Filtrar por Ubicación</label>
                 <div class="row g-2">
-                    <div class="col-6">
-                        <select id="sel-fuero" class="form-select mb-2" onchange="window.logicFuero()">
-                            <option value="">-- Fuero --</option>
-                            <option>Local</option>
-                            <option>Federal</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <select id="sel-lugar" class="form-select mb-2" disabled onchange="window.logicCiudad()"></select>
-                    </div>
+                    <div class="col-6"><select id="sel-fuero" class="form-select" onchange="window.logicFuero()"><option value="">Fuero</option><option>Local</option><option>Federal</option></select></div>
+                    <div class="col-6"><select id="sel-lugar" class="form-select" disabled onchange="window.logicCiudad()"></select></div>
                 </div>
-                <select id="sel-juzgado" class="form-select" disabled onchange="window.aplicarFiltroFinal()"></select>
             </div>
-            <div id="capa-exp" style="display:none;">
-                <label class="small fw-bold text-muted mb-1">Número de Expediente</label>
-                <input type="text" id="txt-exp" class="form-control" placeholder="Ej: 123/2023" onkeyup="window.aplicarFiltroFinal()">
-            </div>
+            <div id="capa-exp" style="display:none;"><input type="text" id="txt-exp" class="form-control" placeholder="Ej: 123/2023" onkeyup="window.aplicarFiltroFinal()"></div>
         </div>
     </div>
 </div>
 
 <!-- LISTA -->
 <div class="container mt-3">
-    <div id="pagination-info" class="pagination-info"></div>
     <div id="lista-expedientes"></div>
     <div id="pagination-bar" class="pagination-bar"></div>
 </div>
-
 
 <!-- MODAL EDITAR -->
 <div class="modal fade" id="modalEditar" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
-
-      <div class="modal-header bg-dark text-white" style="border-bottom:2px solid var(--gold);">
+      <div class="modal-header bg-dark text-white">
         <h5 class="modal-title">Editar Expediente</h5>
-
         <div class="form-check form-switch ms-3">
-          <input class="form-check-input"
-                 type="checkbox"
-                 id="toggle-edicion"
-                 onchange="window.toggleModoEdicion()">
-
-          <label class="form-check-label small fw-bold" for="toggle-edicion">
-            EDICIÓN COMPLETA
-          </label>
+          <input class="form-check-input" type="checkbox" id="toggle-edicion" onchange="window.toggleModoEdicion()">
+          <label class="form-check-label small" for="toggle-edicion">COMPLETO</label>
         </div>
-
-        <button type="button"
-                class="btn-close btn-close-white"
-                data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-
       <div class="modal-body">
-
-        <!-- EDICIÓN SIMPLE -->
         <div id="modo-simple">
-
-          <div class="mb-3">
-            <label class="form-label fw-bold small">
-              Nota rápida
-            </label>
-
-            <textarea id="edit-nota"
-                      class="form-control"
-                      rows="3"></textarea>
-          </div>
-
+          <div class="mb-3"><label class="fw-bold small">Nota rápida</label><textarea id="edit-nota" class="form-control" rows="3"></textarea></div>
           <div class="row g-2">
-
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">
-                Ubicación del expediente
-              </label>
-
-              <input type="text"
-                     id="edit-ubicacion"
-                     class="form-control">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">
-                Término
-              </label>
-
-              <input type="text"
-                     id="edit-termino"
-                     class="form-control">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">
-                Pendientes
-              </label>
-
-              <textarea id="edit-pendientes"
-                        class="form-control"
-                        rows="2"></textarea>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">
-                Observaciones
-              </label>
-
-              <textarea id="edit-observaciones"
-                        class="form-control"
-                        rows="2"></textarea>
-            </div>
-
+            <div class="col-md-6"><label class="small">Ubicación</label><input type="text" id="edit-ubicacion" class="form-control"></div>
+            <div class="col-md-6"><label class="small">Término</label><input type="text" id="edit-termino" class="form-control"></div>
           </div>
-
-          <div class="mt-3">
-            <label class="form-label fw-bold small">
-              Estado Procesal
-            </label>
-
-            <textarea id="edit-estado"
-                      class="form-control"
-                      rows="5"></textarea>
-          </div>
-
+          <div class="mt-3"><label class="small">Estado Procesal</label><textarea id="edit-estado" class="form-control" rows="4"></textarea></div>
         </div>
-
-        <!-- EDICIÓN COMPLETA -->
-        <div id="modo-completo" style="display:none;">
-          <div class="row g-3" id="contenedor-edicion-completa"></div>
-        </div>
-
-        <!-- VALIDACIÓN FÍSICO / DIGITAL -->
-        <div class="mt-4 border-top pt-3">
-
-          <div class="fw-bold small mb-2">
-            Tipo de revisión
-          </div>
-
+        <div id="modo-completo" style="display:none;"><div class="row g-3" id="contenedor-edicion-completa"></div></div>
+        <div class="mt-3 border-top pt-2">
           <div class="d-flex gap-2">
-
-            <button class="btn btn-revision"
-                    type="button"
-                    onclick="window.setTipoRevision('FISICO')">
-              FÍSICO
-            </button>
-
-            <button class="btn btn-revision"
-                    type="button"
-                    onclick="window.setTipoRevision('DIGITAL')">
-              DIGITAL
-            </button>
-
+            <button class="btn btn-revision w-50" onclick="window.setTipoRevision('FISICO')">FÍSICO</button>
+            <button class="btn btn-revision w-50" onclick="window.setTipoRevision('DIGITAL')">DIGITAL</button>
           </div>
-
           <input type="hidden" id="tipo-revision">
-
         </div>
-
         <input type="hidden" id="edit-row-index">
-
       </div>
-
       <div class="modal-footer">
-
-        <button type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal">
-          Cerrar
-        </button>
-
-        <button type="button"
-                class="btn btn-dark"
-                id="btn-guardar"
-                onclick="window.guardarCambios()"
-                style="background:var(--navy);">
-
-          <span id="btn-guardar-txt">Guardar</span>
-
-          <span id="btn-guardar-spin"
-                class="spinner-border spinner-border-sm ms-1"
-                style="display:none;"></span>
-
-        </button>
-
+        <button type="button" class="btn btn-dark w-100" id="btn-guardar" onclick="window.guardarCambios()">Guardar</button>
       </div>
-
     </div>
   </div>
 </div>
@@ -498,1322 +162,223 @@
 <script src="db.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ════════════════════════════════════════════════════════════
 // CONFIGURACIÓN
-// ════════════════════════════════════════════════════════════
 const CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com';
 const SHEET_ID  = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
-const PAGE_SIZE = 20; // expedientes por página
+const PAGE_SIZE = 20;
 
-  const LOG_SHEET = 'LOGS';
-
-const DEVICE_ID =
-    localStorage.getItem('device_id') ||
-    crypto.randomUUID();
-
-localStorage.setItem(
-    'device_id',
-    DEVICE_ID
-);
-
-// ── Estado de la app (encapsulado, fuera de window) ──
 const App = {
     tokenClient : null,
-
     accessToken : null,
-  
-    tokenExpira :
-    parseInt(localStorage.getItem('tokenExpira') || '0'),
-  
     rawData     : [],
     filtrados   : [],
     paginaActual: 1,
-    ordenActual : 'recientes',
+    syncInProgress: false
 };
-  const COLUMNAS = [
-    'ID',
-    'Expediente',
-    'Acumulado',
-    'Juzgado',
-    'Cliente',
-    'Actor',
-    'Demandado',
-    'Juicio',
-    'Monto',
-    'Relacionado',
-    'Piezas',
-    'Estado_Procesal',
-    'Entidad_Federativa',
-    'Distrito_Judicial_o_Ciudad',
-    'Fuero',
-    'Recursos',
-    'Sentencia',
-    'Autorizados',
-    'Observaciones',
-    'Pendientes',
-    'Termino',
-    'Ultima_Modificacion',
-    'Ubicacion_del_Expediente',
-    'Ultima_revision',
-    'Nota_rapida'
-];
 
-const COLUMNAS_NO_EDITABLES = [
-    0,
-    21,
-    23
-];
+const COLUMNAS = ['ID','Expediente','Acumulado','Juzgado','Cliente','Actor','Demandado','Juicio','Monto','Relacionado','Piezas','Estado_Procesal','Entidad_Federativa','Distrito_Judicial_o_Ciudad','Fuero','Recursos','Sentencia','Autorizados','Observaciones','Pendientes','Termino','Ultima_Modificacion','Ubicacion_del_Expediente','Ultima_revision','Nota_rapida'];
+const COLUMNAS_NO_EDITABLES = [0, 21, 23];
 
-// ════════════════════════════════════════════════════════════
-// TOAST — notificaciones no bloqueantes
-// ════════════════════════════════════════════════════════════
-function toast(mensaje, tipo = 'success', duracion = 3500) {
-    const iconos = { success: 'check_circle', error: 'error', warning: 'warning' };
-    const div = document.createElement('div');
-    div.className = `toast-msg ${tipo}`;
-    div.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">${iconos[tipo]}</span>${mensaje}`;
-    const container = document.getElementById('toast-container');
-    container.appendChild(div);
-    setTimeout(() => div.remove(), duracion);
+// TOAST
+function toast(m, t='success') {
+    const c = document.getElementById('toast-container');
+    const d = document.createElement('div');
+    d.className = `toast-msg ${t}`;
+    d.innerHTML = m;
+    c.appendChild(d);
+    setTimeout(() => d.remove(), 3000);
 }
 
-// ════════════════════════════════════════════════════════════
-// UTILIDADES
-// ════════════════════════════════════════════════════════════
-function normalizar(texto) {
-    return (texto || '').toString().toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]/g, '');
-}
-function tokenVigente() {
-
-    return (
-        App.accessToken &&
-        App.tokenExpira &&
-        Date.now() < App.tokenExpira
-    );
-}
-  function ultimaValidacionVigente() {
-
-    const ultima =
-        parseInt(
-            localStorage.getItem('ultimaValidacion') || '0',
-            10
-        );
-
-    if (!ultima) {
-        return false;
-    }
-
-    const ahora = Date.now();
-
-    // 4 horas máximas sin validación
-    return (ahora - ultima) < (4 * 60 * 60 * 1000);
-}
-
-async function validarSesionPeriodicamente() {
-
-    // Sin conexión: permitir uso hasta 4 horas
-    if (!navigator.onLine) {
-
-        if (!ultimaValidacionVigente()) {
-            toast(
-                'La sesión debe validarse nuevamente.',
-                'warning',
-                6000
-            );
-            window.cerrarSesion();
-        }
-
-        return;
-    }
-
-    // Con conexión y token vigente
-    if (App.tokenClient && App.accessToken) {
-        try {
-            App.tokenClient.requestAccessToken({
-                prompt: ''
-            });
-        } catch (e) {
-            console.error('Error validando sesión:', e);
-        }
-    }
-}
-// ════════════════════════════════════════════════════════════
-// AUTENTICACIÓN — token solo en memoria (sin localStorage)
-// ════════════════════════════════════════════════════════════
- window.initGis = async function () {
-
-    // Inicializar IndexedDB
+// INICIO GIS
+window.initGis = async function() {
     await initDB();
-
-    App.tokenClient =
-        google.accounts.oauth2.initTokenClient({
-
-            client_id: CLIENT_ID,
-
-            scope:
-                'https://www.googleapis.com/auth/spreadsheets',
-
-            callback: (tokenResponse) => {
-
-                if (
-                    tokenResponse &&
-                    tokenResponse.access_token
-                ) {
-
-                    App.accessToken =
-                        tokenResponse.access_token;
-
-                    App.tokenExpira =
-                        Date.now() +
-                        (4 * 60 * 60 * 1000);
-
-                  localStorage.setItem(
-                  'ultimaValidacion',
-                   Date.now().toString()
-                   );
-
-                    localStorage.setItem(
-                        'tokenExpira',
-                        App.tokenExpira.toString()
-                    );
-
-                    // Validación automática cada 120 minutos
-                    setInterval(
-                    validarSesionPeriodicamente,
-                    120 * 60 * 1000
-);
-                    entrarApp();
-                }
+    App.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: (resp) => {
+            if (resp.access_token) {
+                App.accessToken = resp.access_token;
+                entrarApp();
             }
-        });
-
-    // Auto login
-   // Auto login
-if (tokenVigente() || ultimaValidacionVigente()) {
-    entrarApp();
-}
-};
-function renovarToken() {
-    // Solicita nuevo token silenciosamente (sin popup) si el usuario sigue activo
-    if (App.tokenClient) {
-        App.tokenClient.requestAccessToken({ prompt: '' });
-    }
-}
-
-window.iniciarSesion = () => {
-    if (App.tokenClient) {
-        App.tokenClient.requestAccessToken({ prompt: 'consent' });
-    } else {
-        toast('Cargando conexión, intenta en un momento...', 'warning');
-    }
+        }
+    });
+    if (localStorage.getItem('token_saved')) entrarApp();
 };
 
-window.cerrarSesion = () => {
+window.iniciarSesion = () => App.tokenClient.requestAccessToken();
+window.cerrarSesion = () => { localStorage.clear(); location.reload(); };
 
-    if (App.accessToken) {
-
-        google.accounts.oauth2.revoke(
-            App.accessToken,
-            () => {}
-        );
-    }
-
-    localStorage.removeItem('tokenExpira');
-
-    App.accessToken = null;
-    App.tokenExpira = 0;
-
-    location.reload();
-};
-
-function entrarApp() {
+async function entrarApp() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('search-bar').style.display = 'block';
-    document.getElementById('btn-logout-nav').style.display = 'flex';
+    document.getElementById('btn-logout-nav').style.display = 'block';
     consultarDatos();
+    
+    // Auto-sync cada vez que recupera conexión
+    window.addEventListener('online', window.sincronizarPendientes);
 }
 
-// ════════════════════════════════════════════════════════════
 // DATOS
-// ════════════════════════════════════════════════════════════
 async function consultarDatos() {
-
-  // SIN INTERNET
-if (!navigator.onLine) {
-
-    toast(
-        'Modo offline activo',
-        'warning'
-    );
-
-    const datosLocales =
-        await cargarExpedientesLocal();
-
-    if (datosLocales.length > 0) {
-
-        App.rawData = [COLUMNAS, ...datosLocales];
-
-        prepararFiltros();
-
-        App.paginaActual = 1;
-
-        App.filtrados = App.rawData.slice(1);
-
-        window.aplicarFiltroFinal();
-
+    if (!navigator.onLine) {
+        const local = await cargarExpedientesLocal();
+        if (local.length) {
+            App.rawData = [COLUMNAS, ...local];
+            renderizar();
+        }
         return;
     }
-
-    toast(
-        'No existen datos guardados localmente.',
-        'error'
-    );
-
-    return;
-}
-
-// SIN TOKEN
-if (!App.accessToken) { toast('Sesión expirada. Ingresa de nuevo.', 'warning'); window.cerrarSesion(); return; }
     
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
     try {
-        const response = await fetch(url, {
-            headers: { 'Authorization': 'Bearer ' + App.accessToken }
+        const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`, {
+            headers: { 'Authorization': `Bearer ${App.accessToken}` }
         });
-
-        if (response.status === 401) {
-            toast('Sesión expirada. Vuelve a ingresar.', 'warning');
-            window.cerrarSesion();
-            return;
-        }
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        if (data.values && data.values.length > 1) {
+        const data = await resp.json();
+        if (data.values) {
             App.rawData = data.values;
             await guardarExpedientesLocal(data.values);
-            prepararFiltros();
-            App.paginaActual = 1;
-            App.filtrados = App.rawData.slice(1);
             window.aplicarFiltroFinal();
-        } else if (data.values && data.values.length <= 1) {
-            toast('La hoja de datos está vacía.', 'warning');
-        } else {
-            throw new Error(data.error?.message || 'Respuesta inesperada de la API');
+            // Intentar sincronizar lo que quedó pendiente offline
+            window.sincronizarPendientes();
         }
-    } catch (e) {
-        console.error('consultarDatos:', e);
-        toast('No se pudieron cargar los expedientes. ' + (e.message || ''), 'error');
-    }
+    } catch (e) { toast("Error cargando datos", "error"); }
 }
 
-// ════════════════════════════════════════════════════════════
-// FILTROS
-// ════════════════════════════════════════════════════════════
-window.toggleCapas = function (tipo) {
-    const tipos = ['cliente', 'fuero', 'exp'];
-    const btnActivo = document.getElementById(`btn-f-${tipo}`);
-    const yaActivo  = btnActivo.classList.contains('activo');
-
-    // Desactivar y ocultar TODOS primero (exclusividad + reset)
-    tipos.forEach(t => {
-        document.getElementById(`btn-f-${t}`).classList.remove('activo');
-        document.getElementById(`capa-${t}`).style.display = 'none';
-    });
-    limpiarSubFiltros();
-    document.getElementById('busqG').value = '';
-    document.getElementById('area-filtros').style.display = 'none';
-
-    // Si el botón pulsado NO estaba activo → activarlo
-    if (!yaActivo) {
-        btnActivo.classList.add('activo');
-        document.getElementById(`capa-${tipo}`).style.display = 'block';
-        document.getElementById('area-filtros').style.display = 'block';
-    }
-
-    window.aplicarFiltroFinal();
-};
-function parseFecha(fechaStr) {
-
-    if (!fechaStr || typeof fechaStr !== 'string') {
-        return 0;
-    }
-
-    fechaStr = fechaStr
-        .trim()
-        .toLowerCase()
-        .replace(',', '')
-        .replace('a. m.', 'am')
-        .replace('p. m.', 'pm')
-        .replace('a.m.', 'am')
-        .replace('p.m.', 'pm');
-
-    const match = fechaStr.match(
-        /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?$/
-    );
-
-    if (!match) {
-        return 0;
-    }
-
-    let dia       = parseInt(match[1], 10);
-    let mes       = parseInt(match[2], 10) - 1;
-    let anio      = parseInt(match[3], 10);
-    let horas     = parseInt(match[4] || 0, 10);
-    let minutos   = parseInt(match[5] || 0, 10);
-    let segundos  = parseInt(match[6] || 0, 10);
-    let periodo   = match[7] || '';
-
-    // Conversión AM/PM
-    if (periodo === 'pm' && horas < 12) {
-        horas += 12;
-    }
-
-    if (periodo === 'am' && horas === 12) {
-        horas = 0;
-    }
-
-    return new Date(
-        anio,
-        mes,
-        dia,
-        horas,
-        minutos,
-        segundos
-    ).getTime();
-}
-  function prepararFiltros() {
-    const datos = App.rawData.slice(1);
-    const clientes = [...new Set(datos.map(f => f[4]))].filter(Boolean).sort();
-    document.getElementById('sel-cliente').innerHTML =
-        '<option value="">-- Todos los Clientes --</option>' +
-        clientes.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-
-window.logicFuero = function () {
-    const fuero = document.getElementById('sel-fuero').value;
-    const selLugar = document.getElementById('sel-lugar');
-    if (!fuero) { selLugar.disabled = true; selLugar.innerHTML = ''; window.aplicarFiltroFinal(); return; }
-    const ciudades = [...new Set(App.rawData.slice(1).filter(f => f[14] === fuero).map(f => f[13]))].filter(Boolean).sort();
-    selLugar.disabled = false;
-    selLugar.innerHTML = '<option value="">-- Ciudad --</option>' + ciudades.map(c => `<option value="${c}">${c}</option>`).join('');
-    window.aplicarFiltroFinal();
+// FILTROS Y RENDER (Resumido para el index)
+window.aplicarFiltroFinal = function() {
+    let res = App.rawData.slice(1);
+    const busq = document.getElementById('busqG').value.toLowerCase();
+    if (busq) res = res.filter(f => f.join(' ').toLowerCase().includes(busq));
+    
+    App.filtrados = res;
+    renderizar();
 };
 
-window.logicCiudad = function () {
-    const fuero  = document.getElementById('sel-fuero').value;
-    const ciudad = document.getElementById('sel-lugar').value;
-    const selJuzgado = document.getElementById('sel-juzgado');
-    if (!ciudad) { selJuzgado.disabled = true; selJuzgado.innerHTML = ''; window.aplicarFiltroFinal(); return; }
-    const juzgados = [...new Set(App.rawData.slice(1).filter(f => f[14] === fuero && f[13] === ciudad).map(f => f[3]))].filter(Boolean).sort();
-    selJuzgado.disabled = false;
-    selJuzgado.innerHTML = '<option value="">-- Juzgado --</option>' + juzgados.map(j => `<option value="${j}">${j}</option>`).join('');
-    window.aplicarFiltroFinal();
-};
+function renderizar() {
+    const cont = document.getElementById('lista-expedientes');
+    cont.innerHTML = "";
+    const inicio = (App.paginaActual - 1) * PAGE_SIZE;
+    const fin = inicio + PAGE_SIZE;
+    const paged = App.filtrados.slice(inicio, fin);
 
-window.aplicarFiltroFinal = function () {
-    const termG  = normalizar(document.getElementById('busqG').value);
-
-    const btnClienteActivo = document.getElementById('btn-f-cliente').classList.contains('activo');
-    const btnFueroActivo   = document.getElementById('btn-f-fuero').classList.contains('activo');
-    const btnExpActivo     = document.getElementById('btn-f-exp').classList.contains('activo');
-
-    const valC   = document.getElementById('sel-cliente').value;
-    const valFu  = document.getElementById('sel-fuero').value;
-    const valLu  = document.getElementById('sel-lugar').value;
-    const valJu  = document.getElementById('sel-juzgado').value;
-    const valE   = normalizar(document.getElementById('txt-exp').value);
-
-    App.filtrados = App.rawData.slice(1).filter(f => {
-        const matchGlobal = !termG || f.some(col => normalizar(col).includes(termG));
-
-        const matchC = btnClienteActivo && valC
-            ? f[4] === valC
-            : true;
-
-        let matchF = true;
-        if (btnFueroActivo) {
-            matchF = (valFu ? f[14] === valFu : true) &&
-                     (valLu ? f[13] === valLu : true) &&
-                     (valJu ? f[3] === valJu : true);
-        }
-
-       const matchE = btnExpActivo && valE
-       ? normalizar(f[1]) === valE
-       : true;
-
-     return matchGlobal && matchC && matchF && matchE;
-});
-
-const orden = document.getElementById('orden-fecha')?.value || 'recientes';
-
-App.filtrados.sort((a, b) => {
-    const fechaA = parseFecha(a[21]);
-    const fechaB = parseFecha(b[21]);
-
-    return orden === 'recientes'
-        ? fechaB - fechaA
-        : fechaA - fechaB;
-});
-
-App.paginaActual = 1;
-renderCards(App.filtrados);
-};
-function limpiarSubFiltros() {
-    document.getElementById('sel-cliente').value = '';
-    document.getElementById('sel-fuero').value = '';
-    document.getElementById('sel-lugar').innerHTML = '';
-    document.getElementById('sel-lugar').disabled = true;
-    document.getElementById('sel-juzgado').innerHTML = '';
-    document.getElementById('sel-juzgado').disabled = true;
-    document.getElementById('txt-exp').value = '';
-}
-
-window.resetearBusquedas = function () {
-    document.getElementById('busqG').value = '';
-    ['cliente', 'fuero', 'exp'].forEach(t => {
-        document.getElementById(`btn-f-${t}`).classList.remove('activo');
-        document.getElementById(`capa-${t}`).style.display = 'none';
-    });
-    limpiarSubFiltros();
-    document.getElementById('area-filtros').style.display = 'none';
-    window.aplicarFiltroFinal();
-};
-
-// ════════════════════════════════════════════════════════════
-// RENDERIZADO + PAGINACIÓN
-// ════════════════════════════════════════════════════════════
-function renderCards(filas) {
-    const total   = filas.length;
-    const paginas = Math.ceil(total / PAGE_SIZE);
-    const p       = Math.min(App.paginaActual, paginas || 1);
-    App.paginaActual = p;
-
-    const inicio = (p - 1) * PAGE_SIZE;
-    const slice  = filas.slice(inicio, inicio + PAGE_SIZE);
-
-    // Info
-    const infoEl = document.getElementById('pagination-info');
-    infoEl.textContent = total
-        ? `Mostrando ${inicio + 1}–${Math.min(inicio + PAGE_SIZE, total)} de ${total} expediente${total !== 1 ? 's' : ''}`
-        : 'Sin resultados.';
-
-    // Cards
-    const contenedor = document.getElementById('lista-expedientes');
-    contenedor.innerHTML = '';
-   slice.forEach(f => {
-    const realIndex = App.rawData.findIndex(r => r[1] === f[1]);
-
-    const pendientes = f[19]
-        ? `<div class="small mt-2"><span class="fw-bold">Pendientes:</span> ${f[19]}</div>`
-        : '';
-
-    const termino = f[20]
-        ? `<div class="small"><span class="fw-bold">Término:</span> ${f[20]}</div>`
-        : '';
-
-    contenedor.innerHTML += `
-        <div class="card card-exp">
+    paged.forEach((f, i) => {
+        const card = document.createElement('div');
+        card.className = "card-exp";
+        card.innerHTML = `
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="small text-muted fw-bold">
-                        ${f[13] || '---'} | ${f[14] || '---'}
-                    </div>
-
-                    <div class="small text-secondary">
-                        ${f[3] || '---'}
-                    </div>
+                    <h6 class="mb-1 fw-bold">${f[1]}</h6>
+                    <p class="small mb-0 text-muted">${f[4]} | ${f[3]}</p>
+                    <div class="badge bg-secondary mt-2">${f[11] || 'Sin estado'}</div>
                 </div>
-
-                <button class="btn-edit" onclick="abrirEditor(${realIndex})" title="Editar">
+                <button class="btn-edit" onclick="window.abrirEditar(${inicio + i})">
                     <span class="material-symbols-outlined">edit_note</span>
                 </button>
             </div>
-
-            <div class="h6 fw-bold text-navy mt-2 mb-1" style="color:var(--navy);">
-                EXP: ${f[1] || '---'}
-            </div>
-
-            <div class="small mb-1">
-                <span class="fw-bold">Juicio:</span> ${f[7] || '---'}
-            </div>
-
-            <div class="small mb-1">
-                <span class="fw-bold">Actor:</span> ${f[5] || '---'}
-            </div>
-
-            <div class="small mb-2">
-                <span class="fw-bold">Demandado:</span> ${f[6] || '---'}
-            </div>
-
-            <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-2">
-                <div class="fw-bold mb-1">Estado Procesal</div>
-                ${f[11] || 'Sin novedades.'}
-            </div>
-
-            <div class="small mb-1">
-                <span class="fw-bold">Ubicación:</span> ${f[22] || '---'}
-            </div>
-
-            <div class="small mb-1">
-                <span class="fw-bold">Autorizados:</span> ${f[17] || '---'}
-            </div>
-
-            ${pendientes}
-            ${termino}
-
-            <div class="small mt-2 p-2 rounded" style="background:#fff8e8; border-left:3px solid var(--gold);">
-                <span class="fw-bold">Nota rápida:</span>
-                ${f[24] || 'Sin nota'}
-            </div>
-
-            <div class="text-end mt-2" style="font-size: 0.65rem; color: var(--gold);">
-                <div>Rev: ${f[21] || '---'}</div>
-                <div>Última revisión: ${f[23] || '---'}</div>
-            </div>
-        </div>`;
-});
-    // Paginación
-    renderPaginacion(paginas, p);
-}
-
-function renderPaginacion(totalPaginas, actual) {
-    const bar = document.getElementById('pagination-bar');
-    bar.innerHTML = '';
-    if (totalPaginas <= 1) return;
-
-    const ir = (n) => { App.paginaActual = n; renderCards(App.filtrados); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-
-    // Anterior
-    const prev = document.createElement('button');
-    prev.textContent = '‹ Anterior';
-    prev.disabled = actual === 1;
-    prev.onclick = () => ir(actual - 1);
-    bar.appendChild(prev);
-
-    // Números de página (máx 5 visibles)
-    const rango = paginasVisibles(actual, totalPaginas);
-    rango.forEach(n => {
-        if (n === '…') {
-            const span = document.createElement('span');
-            span.textContent = '…';
-            bar.appendChild(span);
-        } else {
-            const btn = document.createElement('button');
-            btn.textContent = n;
-            if (n === actual) btn.classList.add('active');
-            btn.onclick = () => ir(n);
-            bar.appendChild(btn);
-        }
-    });
-
-    // Siguiente
-    const next = document.createElement('button');
-    next.textContent = 'Siguiente ›';
-    next.disabled = actual === totalPaginas;
-    next.onclick = () => ir(actual + 1);
-    bar.appendChild(next);
-}
-
-function paginasVisibles(actual, total) {
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    const paginas = [1];
-    if (actual > 3) paginas.push('…');
-    for (let i = Math.max(2, actual - 1); i <= Math.min(total - 1, actual + 1); i++) paginas.push(i);
-    if (actual < total - 2) paginas.push('…');
-    paginas.push(total);
-    return paginas;
-}
-
-// ════════════════════════════════════════════════════════════
-// EDICIÓN
-// ════════════════════════════════════════════════════════════
-const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
-window.toggleModoEdicion = function () {
-
-    const completo = document.getElementById('toggle-edicion').checked;
-
-    document.getElementById('modo-simple').style.display =
-        completo ? 'none' : 'block';
-
-    document.getElementById('modo-completo').style.display =
-        completo ? 'block' : 'none';
-};
-
-window.setTipoRevision = function (tipo) {
-
-    document.getElementById('tipo-revision').value = tipo;
-
-    document.querySelectorAll('.btn-revision')
-        .forEach(btn => btn.classList.remove('activo'));
-
-    const botones = document.querySelectorAll('.btn-revision');
-
-    botones.forEach(btn => {
-
-        if (btn.textContent.trim() === tipo) {
-            btn.classList.add('activo');
-        }
-    });
-
-    toast(`Revisión marcada como ${tipo}`, 'success', 1500);
-};
-window.abrirEditor = function (index) {
-
-    if (index < 0 || index >= App.rawData.length) {
-        toast('No se encontró el expediente.', 'error');
-        return;
-    }
-
-    const fila = App.rawData[index];
-
-    document.getElementById('edit-row-index').value = index + 1;
-
-    // SIMPLE
-    document.getElementById('edit-nota').value          = fila[24] || '';
-    document.getElementById('edit-ubicacion').value    = fila[22] || '';
-    document.getElementById('edit-estado').value       = fila[11] || '';
-    document.getElementById('edit-termino').value      = fila[20] || '';
-    document.getElementById('edit-pendientes').value   = fila[19] || '';
-    document.getElementById('edit-observaciones').value= fila[18] || '';
-
-    document.getElementById('tipo-revision').value = '';
-
-    // COMPLETA
-    const cont = document.getElementById('contenedor-edicion-completa');
-    cont.innerHTML = '';
-
-    COLUMNAS.forEach((nombre, i) => {
-
-        if (COLUMNAS_NO_EDITABLES.includes(i)) {
-            return;
-        }
-
-        cont.innerHTML += `
-            <div class="col-md-6">
-
-                <label class="form-label small fw-bold">
-                    ${nombre}
-                </label>
-
-                <textarea
-                    class="form-control campo-completo"
-                    rows="2"
-                    data-index="${i}">${fila[i] || ''}</textarea>
-
-            </div>
         `;
+        cont.appendChild(card);
     });
+}
 
-    document.getElementById('toggle-edicion').checked = false;
-    window.toggleModoEdicion();
-
-    modalEdit.show();
+// EDICIÓN
+window.abrirEditar = function(indexInFiltrados) {
+    const fila = App.filtrados[indexInFiltrados];
+    const realIndex = App.rawData.findIndex(r => r[0] === fila[0]);
+    
+    document.getElementById('edit-row-index').value = realIndex;
+    document.getElementById('edit-nota').value = fila[24] || "";
+    document.getElementById('edit-ubicacion').value = fila[22] || "";
+    document.getElementById('edit-estado').value = fila[11] || "";
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+    modal.show();
 };
 
-window.guardarCambios = async function () {
+window.guardarCambios = async function() {
+    const ri = parseInt(document.getElementById('edit-row-index').value);
+    const nuevaFila = [...App.rawData[ri]];
+    
+    // Captura de versión anterior para conflicto futuro (Columna V)
+    const versionAnterior = nuevaFila[21];
 
-    // ==========================================================
-    // CONTROL DEL BOTÓN GUARDAR (spinner + disabled)
-    // ==========================================================
-    const btnGuardar = document.getElementById('btn-guardar');
-    const btnTexto   = document.getElementById('btn-guardar-txt');
-    const btnSpinner = document.getElementById('btn-guardar-spin');
+    // Updates Simples
+    nuevaFila[24] = document.getElementById('edit-nota').value;
+    nuevaFila[22] = document.getElementById('edit-ubicacion').value;
+    nuevaFila[11] = document.getElementById('edit-estado').value;
+    nuevaFila[21] = new Date().toLocaleString(); // Ultima Modificación
+    nuevaFila[23] = document.getElementById('tipo-revision').value || "DIGITAL";
 
-    const restaurarBoton = () => {
-        btnGuardar.disabled = false;
-        btnTexto.textContent = 'Guardar';
-        btnSpinner.style.display = 'none';
-    };
+    // Guardar Local
+    await actualizarExpedienteLocal(nuevaFila[0], nuevaFila);
+    App.rawData[ri] = nuevaFila;
 
-    btnGuardar.disabled = true;
-    btnTexto.textContent = 'Guardando...';
-    btnSpinner.style.display = 'inline-block';
+    // Agregar a Cola de Sincronización
+    await agregarCambioQueue({
+        rowIndex: ri,
+        expedienteId: nuevaFila[0],
+        fila: nuevaFila,
+        versionAnterior: versionAnterior,
+        fecha: nuevaFila[21]
+    });
+
+    toast("Cambio guardado localmente");
+    bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+    window.aplicarFiltroFinal();
+    
+    // Intentar subir
+    window.sincronizarPendientes();
+};
+
+// SINCRONIZACIÓN MAESTRA
+window.sincronizarPendientes = async function() {
+    if (App.syncInProgress || !navigator.onLine || !App.accessToken) return;
+    App.syncInProgress = true;
 
     try {
+        const queue = await obtenerQueuePendiente();
+        if (!queue.length) return;
 
-        // ======================================================
-        // VALIDACIÓN DE SESIÓN
-        // ======================================================
-        if (!navigator.onLine && !App.accessToken) {
-            // Offline sin token: permitido
-        } else if (navigator.onLine && !App.accessToken) {
-            toast('Sesión expirada.', 'warning');
-            restaurarBoton();
-            return;
-        }
+        // 1. CONSOLIDACIÓN: Si hay varios cambios del mismo ID, solo el último cuenta
+        const mapa = new Map();
+        queue.forEach(q => mapa.set(q.expedienteId, q));
+        const unicos = Array.from(mapa.values());
 
-        // ======================================================
-        // DATOS BÁSICOS
-        // ======================================================
-        const rowIndex = document.getElementById('edit-row-index').value;
-
-        const tipoRevision =
-            document.getElementById('tipo-revision').value;
-
-        if (!tipoRevision) {
-            toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
-            restaurarBoton();
-            return;
-        }
-
-        const completo =
-            document.getElementById('toggle-edicion').checked;
-
-        const ahora = new Date();
-
-        const fecha =
-            String(ahora.getDate()).padStart(2, '0') + '/' +
-            String(ahora.getMonth() + 1).padStart(2, '0') + '/' +
-            ahora.getFullYear() + ' ' +
-            String(ahora.getHours()).padStart(2, '0') + ':' +
-            String(ahora.getMinutes()).padStart(2, '0') + ':' +
-            String(ahora.getSeconds()).padStart(2, '0');
-
-        const filaOriginal =
-            App.rawData[rowIndex - 1];
-
-        const filaNueva =
-            [...filaOriginal];
-
-        const updates = [];
-
-        function pushUpdate(col, value) {
-            const index = col.charCodeAt(0) - 65;
-            filaNueva[index] = value;
-            updates.push({
-                col,
-                value
-            });
-        }
-
-        // ======================================================
-        // CAPTURA DE CAMBIOS
-        // ======================================================
-        if (!completo) {
-
-            pushUpdate('Y', document.getElementById('edit-nota').value);
-            pushUpdate('W', document.getElementById('edit-ubicacion').value);
-            pushUpdate('L', document.getElementById('edit-estado').value);
-            pushUpdate('U', document.getElementById('edit-termino').value);
-            pushUpdate('T', document.getElementById('edit-pendientes').value);
-            pushUpdate('S', document.getElementById('edit-observaciones').value);
-
-        } else {
-
-            document.querySelectorAll('.campo-completo')
-                .forEach(el => {
-
-                    const index = parseInt(el.dataset.index, 10);
-                    const letra =
-                        String.fromCharCode(65 + index);
-
-                    pushUpdate(letra, el.value);
-                });
-        }
-
-        // Fecha de modificación
-        pushUpdate('V', fecha);
-
-        // Tipo de revisión
-        pushUpdate('X', tipoRevision);
-
-        // ======================================================
-        // DETERMINAR CAMBIOS REALES
-        // ======================================================
-        const cambiosReales = updates.filter(u => {
-            const index = u.col.charCodeAt(0) - 65;
-            const anterior = filaOriginal[index] || '';
-            const nuevo = u.value || '';
-            return anterior !== nuevo;
-        });
-
-        if (!cambiosReales.length) {
-            toast('No se detectaron cambios.', 'warning');
-            restaurarBoton();
-            return;
-        }
-
-        // ======================================================
-        // LOG ÚNICO POR EVENTO
-        // ======================================================
-        const camposModificados = cambiosReales.map(u => {
-            const index = u.col.charCodeAt(0) - 65;
-            return COLUMNAS[index];
-        });
-
-        const logBase = {
-            expediente: filaNueva[1],
-            campos: camposModificados,
-            totalCampos: camposModificados.length,
-            fecha,
-            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE'
-        };
-
-        const hash = await generarHash(logBase);
-
-        const log = {
-            logId: crypto.randomUUID(),
-            fecha,
-            usuario:
-                localStorage.getItem('usuario') ||
-                'desconocido',
-            deviceId: DEVICE_ID,
-            expedienteId: filaNueva[0],
-            campo: `UPDATE (${camposModificados.length} campos)`,
-            valorAnterior: '',
-            valorNuevo: camposModificados.join(', '),
-            versionAnterior: filaOriginal[21] || '',
-            versionNueva: fecha,
-            modo:
-                navigator.onLine
-                    ? 'ONLINE'
-                    : 'OFFLINE',
-            estado:
-                navigator.onLine
-                    ? 'SYNCED'
-                    : 'PENDING',
-            hash
-        };
-
-        // ======================================================
-        // GUARDAR LOCAL SIEMPRE
-        // ======================================================
-        await actualizarExpedienteLocal(
-            parseInt(filaNueva[0], 10),
-            filaNueva
-        );
-
-        // Actualizar memoria
-        App.rawData[rowIndex - 1] = filaNueva;
-
-        // ======================================================
-        // MODO OFFLINE
-        // ======================================================
-        if (!navigator.onLine) {
-
-            await agregarCambioQueue({
-                rowIndex,
-                expedienteId: filaNueva[0],
-                fila: filaNueva,
-                updates: cambiosReales,
-                fecha
+        for (const item of unicos) {
+            const range = `DB!A${item.rowIndex + 1}:Y${item.rowIndex + 1}`;
+            const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${App.accessToken}` },
+                body: JSON.stringify({ values: [item.fila] })
             });
 
-            // Registrar un solo log
-            await registrarLog(log);
-
-            // Programar exportación (15 min sin cambios)
-            if (typeof programarExportacionPendientes === 'function') {
-                programarExportacionPendientes();
+            if (resp.ok) {
+                // Limpiar todos los registros de este expediente en la queue original
+                const repetidos = queue.filter(q => q.expedienteId === item.expedienteId);
+                for (let r of repetidos) await eliminarQueueItem(r.queueId);
             }
-
-            toast(
-                'Guardado offline. Pendiente de sincronización.',
-                'warning',
-                5000
-            );
-
-        } else {
-
-            // ==================================================
-            // MODO ONLINE
-            // ==================================================
-            const requests = [];
-
-            cambiosReales.forEach(u => {
-                requests.push(
-                    fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
-                        {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization':
-                                    'Bearer ' + App.accessToken,
-                                'Content-Type':
-                                    'application/json'
-                            },
-                            body: JSON.stringify({
-                                values: [[u.value]]
-                            })
-                        }
-                    )
-                );
-            });
-
-            const responses =
-                await Promise.all(requests);
-
-            for (const response of responses) {
-                if (!response.ok) {
-                    throw new Error(
-                        `Error Google Sheets: ${response.status}`
-                    );
-                }
-            }
-
-            // Registrar un solo log
-            await registrarLog(log);
-
-            // Subir un solo log
-            await subirLogSheets(log);
-
-            toast(
-                'Expediente actualizado.',
-                'success'
-            );
         }
+        
+        // 2. LOGS: Subir auditoría si existe
+        if (typeof sincronizarLogsOffline === 'function') await sincronizarLogsOffline();
 
-        // ======================================================
-        // CERRAR MODAL
-        // ======================================================
-        modalEdit.hide();
-
-        // ======================================================
-        // RECONSTRUIR FILTROS Y REORDENAR
-        // (mueve la card al inicio o final según el orden)
-        // ======================================================
-        window.aplicarFiltroFinal();
-
+        toast("Sincronización exitosa", "success");
     } catch (e) {
-
         console.error(e);
-
-        toast(
-            'No se pudo guardar: ' + (e.message || ''),
-            'error',
-            7000
-        );
-
     } finally {
-
-        restaurarBoton();
+        App.syncInProgress = false;
     }
 };
 
-// ════════════════════════════════════════════════════════════
-// SERVICE WORKER
-// ════════════════════════════════════════════════════════════
-if ('serviceWorker' in navigator) {
+window.setTipoRevision = (t) => {
+    document.getElementById('tipo-revision').value = t;
+    document.querySelectorAll('.btn-revision').forEach(b => b.classList.remove('activo'));
+    event.target.classList.add('activo');
+};
 
-    window.addEventListener('load', async () => {
+// Carga Inicial
+window.onload = window.initGis;
 
-        try {
-
-            const registration = await navigator.serviceWorker.register('./sw.js');
-
-            console.log('SW registrado:', registration.scope);
-
-        } catch (error) {
-
-            console.error('Error SW:', error);
-        }
-    });
-}
-              </script>
-<script>
-
-</script>  
-<script src="https://accounts.google.com/gsi/client" onload="window.initGis()">
 </script>
-
-<script>
-  // ═══════════════════════════════════════
-// EXPORTACIÓN DIFERIDA DE PENDIENTES
-// ═══════════════════════════════════════
-
-let timerExportacionPendientes = null;
-
-// Programa la exportación 15 minutos después del último cambio offline
-function programarExportacionPendientes() {
-
-    if (timerExportacionPendientes) {
-        clearTimeout(timerExportacionPendientes);
-    }
-
-    timerExportacionPendientes = setTimeout(async () => {
-        try {
-            if (typeof exportarPendientes === 'function') {
-                await exportarPendientes();
-                console.log('Pendientes exportados automáticamente.');
-            }
-        } catch (e) {
-            console.error('Error al exportar pendientes:', e);
-        }
-    }, 15 * 60 * 1000); // 15 minutos
-}
-
-// Exportar al cerrar la app
-async function exportarPendientesAlCerrar() {
-    try {
-        if (typeof exportarPendientes === 'function') {
-            await exportarPendientes();
-        }
-    } catch (e) {
-        console.error('Error al exportar pendientes al cerrar:', e);
-    }
-}
-// Exportación automática desactivada temporalmente.
-// Se reactivará en db.js con una estrategia segura.
-// pagehide es más confiable en iOS y PWA
-// window.addEventListener('pagehide', exportarPendientesAlCerrar);
-// Respaldo adicional
-//window.addEventListener('beforeunload', exportarPendientesAlCerrar);
-// ═══════════════════════════════════════
-// ONLINE / OFFLINE
-// ═══════════════════════════════════════
-
-window.addEventListener('online', () => {
-
-    toast(
-        'Conexión restaurada',
-        'success'
-    );
-
-    sincronizarPendientes();
-});
-
-window.addEventListener('offline', () => {
-
-    toast(
-        'Trabajando sin internet',
-        'warning',
-        5000
-    );
-});
-
-// ═══════════════════════════════════════
-// LOGS
-// ═══════════════════════════════════════
-async function subirLogSheets(log) {
-
-    if (!navigator.onLine) {
-        return;
-    }
-
-    try {
-
-        await fetch(
-            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:M:append?valueInputOption=USER_ENTERED`,
-            {
-                method: 'POST',
-
-                headers: {
-
-                    Authorization:
-                        'Bearer ' + App.accessToken,
-
-                    'Content-Type':
-                        'application/json'
-                },
-
-                body: JSON.stringify({
-
-                    values: [[
-
-                        log.logId,
-
-                        log.fecha,
-
-                        log.usuario,
-
-                        log.deviceId,
-
-                        log.expedienteId,
-
-                        log.campo,
-
-                        log.valorAnterior,
-
-                        log.valorNuevo,
-
-                        log.versionAnterior,
-
-                        log.versionNueva,
-
-                        log.modo,
-
-                        log.estado,
-
-                        log.hash
-                    ]]
-                })
-            }
-        );
-
-    } catch (e) {
-
-        console.error(
-            'Error LOG',
-            e
-        );
-    }
-}
-async function generarHash(data) {
-
-    const texto =
-        JSON.stringify(data);
-
-    const encoder =
-        new TextEncoder();
-
-    const bytes =
-        encoder.encode(texto);
-
-    const hashBuffer =
-        await crypto.subtle.digest(
-            'SHA-256',
-            bytes
-        );
-
-    return Array.from(
-        new Uint8Array(hashBuffer)
-    )
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-// ═══════════════════════════════════════
-// SYNC PLACEHOLDER
-// ═══════════════════════════════════════
-
-async function sincronizarPendientes() {
-
-    if (!navigator.onLine) {
-        return;
-    }
-
-    const pendientes =
-        await obtenerQueuePendiente();
-
-    if (!pendientes.length) {
-        return;
-    }
-
-    toast(
-        `Sincronizando ${pendientes.length} cambios...`,
-        'warning',
-        4000
-    );
-
-    for (const item of pendientes) {
-
-        try {
-
-       // OBTENER VERSIÓN ONLINE
-           // Política temporal: LAST WRITE WINS.
-           // Los cambios offline siempre sobrescriben la versión online.
-           // La detección de conflictos se reimplementará posteriormente
-           // utilizando versionAnterior almacenada en la queue.
-       // SUBIR CAMBIOS
-            const requests = [];
-
-            item.updates.forEach(u => {
-
-                requests.push(
-
-                    fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${item.rowIndex}?valueInputOption=USER_ENTERED`,
-                        {
-                            method: 'PUT',
-
-                            headers: {
-
-                                Authorization:
-                                    'Bearer ' + App.accessToken,
-
-                                'Content-Type':
-                                    'application/json'
-                            },
-
-                            body: JSON.stringify({
-                                values: [[u.value]]
-                            })
-                        }
-                    )
-                );
-            });
-
-            await Promise.all(requests);
-
-            // LOG SYNC
-            const syncHash =
-                await generarHash({
-                    expediente:
-                        item.fila[1],
-
-                    estado:
-                        'SYNCED',
-
-                    fecha:
-                        new Date().toISOString()
-                });
-
-            await subirLogSheets({
-
-                logId:
-                    crypto.randomUUID(),
-
-                fecha:
-                    new Date().toLocaleString(),
-
-                usuario:
-                    localStorage.getItem('usuario') ||
-                    'desconocido',
-
-                deviceId:
-                    DEVICE_ID,
-
-                expedienteId:
-                    item.fila[0],
-
-                campo:
-                    'SYNC',
-
-                valorAnterior:
-                    '',
-
-                valorNuevo:
-                    'Sincronización completada',
-
-                versionAnterior:
-                    item.fecha,
-
-                versionNueva:
-                    new Date().toLocaleString(),
-
-                modo:
-                    'SYNC',
-
-                estado:
-                    'SYNCED',
-
-                hash:
-                    syncHash
-            });
-
-            // ELIMINAR DE QUEUE
-            await eliminarQueueItem(
-                item.queueId
-            );
-
-        } catch (e) {
-
-            console.error(
-                'Error sincronizando:',
-                e
-            );
-        }
-    }
-
-    toast(
-        'Sincronización finalizada',
-        'success'
-    );
-}
-</script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
