@@ -1680,139 +1680,125 @@ async function generarHash(data) {
 // SYNC PLACEHOLDER
 // ═══════════════════════════════════════
 
+let sincronizando = false;
+
 async function sincronizarPendientes() {
 
+    // Evitar ejecuciones simultáneas
+    if (sincronizando) {
+        return;
+    }
+
+    // Sin internet
     if (!navigator.onLine) {
         return;
     }
 
-    const pendientes =
-        await obtenerQueuePendiente();
-
-    if (!pendientes.length) {
+    // Sin token válido
+    if (!App.accessToken) {
+        console.warn('Sin token válido. Sincronización cancelada.');
         return;
     }
 
-    toast(
-        `Sincronizando ${pendientes.length} cambios...`,
-        'warning',
-        4000
-    );
+    sincronizando = true;
 
-    for (const item of pendientes) {
+    try {
 
-        try {
+        const pendientes = await obtenerQueuePendiente();
 
-       // OBTENER VERSIÓN ONLINE
+        if (!pendientes.length) {
+            return;
+        }
+
+        toast(
+            `Sincronizando ${pendientes.length} cambios...`,
+            'warning',
+            4000
+        );
+
+        for (const item of pendientes) {
+
+            try {
+
+                const requests = [];
+
+                item.updates.forEach(u => {
+                    requests.push(
+                        fetch(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${item.rowIndex}?valueInputOption=USER_ENTERED`,
+                            {
+                                method: 'PUT',
+                                headers: {
+                                    Authorization: 'Bearer ' + App.accessToken,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    values: [[u.value]]
+                                })
+                            }
+                        )
+                    );
+                });
+
+                const responses = await Promise.all(requests);
+
+                // Verificar respuestas
+                for (const response of responses) {
+
+                    if (response.status === 401) {
+                        console.warn('Token expirado. Sincronización detenida.');
+                        toast(
+                            'Sesión expirada. Inicia sesión nuevamente.',
+                            'warning',
+                            6000
+                        );
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `HTTP ${response.status}`
+                        );
+                    }
+                }
+
+                // Eliminar de la queue
+                await eliminarQueueItem(item.queueId);
+
+            } catch (e) {
+
+                console.error(
+                    'Error sincronizando item:',
+                    e
+                );
+
+                // Mantener en queue para intentar después
+                break;
+            }
+        }
+
+        toast(
+            'Sincronización finalizada',
+            'success'
+        );
+
+    } catch (e) {
+
+        console.error(
+            'Error general de sincronización:',
+            e
+        );
+
+    } finally {
+
+        sincronizando = false;
+    }
+}
            // Política temporal: LAST WRITE WINS.
            // Los cambios offline siempre sobrescriben la versión online.
            // La detección de conflictos se reimplementará posteriormente
            // utilizando versionAnterior almacenada en la queue.
-       // SUBIR CAMBIOS
-            const requests = [];
-
-            item.updates.forEach(u => {
-
-                requests.push(
-
-                    fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${item.rowIndex}?valueInputOption=USER_ENTERED`,
-                        {
-                            method: 'PUT',
-
-                            headers: {
-
-                                Authorization:
-                                    'Bearer ' + App.accessToken,
-
-                                'Content-Type':
-                                    'application/json'
-                            },
-
-                            body: JSON.stringify({
-                                values: [[u.value]]
-                            })
-                        }
-                    )
-                );
-            });
-
-            await Promise.all(requests);
-
-            // LOG SYNC
-            const syncHash =
-                await generarHash({
-                    expediente:
-                        item.fila[1],
-
-                    estado:
-                        'SYNCED',
-
-                    fecha:
-                        new Date().toISOString()
-                });
-
-            await subirLogSheets({
-
-                logId:
-                    crypto.randomUUID(),
-
-                fecha:
-                    new Date().toLocaleString(),
-
-                usuario:
-                    localStorage.getItem('usuario') ||
-                    'desconocido',
-
-                deviceId:
-                    DEVICE_ID,
-
-                expedienteId:
-                    item.fila[0],
-
-                campo:
-                    'SYNC',
-
-                valorAnterior:
-                    '',
-
-                valorNuevo:
-                    'Sincronización completada',
-
-                versionAnterior:
-                    item.fecha,
-
-                versionNueva:
-                    new Date().toLocaleString(),
-
-                modo:
-                    'SYNC',
-
-                estado:
-                    'SYNCED',
-
-                hash:
-                    syncHash
-            });
-
-            // ELIMINAR DE QUEUE
-            await eliminarQueueItem(
-                item.queueId
-            );
-
-        } catch (e) {
-
-            console.error(
-                'Error sincronizando:',
-                e
-            );
-        }
-    }
-
-    toast(
-        'Sincronización finalizada',
-        'success'
-    );
+      
 }
 </script>
 </body>
