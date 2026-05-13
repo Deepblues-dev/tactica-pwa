@@ -25,7 +25,7 @@
     .btn-revision:hover { background: var(--navy); color: var(--gold); }
     .btn-revision.activo { background: var(--navy) !important; color: var(--gold) !important; border-color: var(--navy) !important; }
 
-    #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #06152C !important; color: white; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #06152C !important; color: white; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .logo-img { width: auto; height:120px; object-fit: contain; }
     .logo-splash { width: min(80vw, 360px); height: auto; aspect-ratio: 1 / 1; object-fit: contain; display: block; margin-bottom: 5px; }
     .linea-solida { border: 1px; height: 3px; width: 360px; background-color: #FFFFFF; margin: 20px auto; opacity: 1; }
@@ -35,7 +35,7 @@
     .sub-filter-box { display: none; padding: 15px; margin-top: 10px; background: #f1f3f5; border-radius: 8px; border-left: 4px solid var(--navy); }
 
     .filter-btn-group { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
-    .filter-btn { flex: 1; max-width: 130px; padding: 7px 10px; font-size: 0.78rem; font-weight: 700; border: 2px solid var(--navy); border-radius: 6px; background: white; color: var(--navy); cursor: pointer; transition: all 0.18s ease; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 0 #b0bec5; }
+    .filter-btn { flex: 1; max-width: 130px; padding: 7px 10px; font-size: 0.78rem; font-weight: 700; border: 2px solid var(--navy); border-radius: 6px; background: white; color: var(--navy); cursor: pointer; transition: all 0.2s; }
     .filter-btn.activo { background: var(--navy); color: var(--gold); box-shadow: inset 0 3px 6px rgba(0,0,0,0.35); transform: translateY(2px); border-color: var(--navy); }
 
     .card-exp { border: none; border-top: 4px solid var(--gold); border-radius: 8px; background: var(--white); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; padding: 15px; }
@@ -48,6 +48,10 @@
     .toast-msg.error { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
     .toast-msg.warning { background: #fef9c3; color: #854d0e; border-left: 4px solid #eab308; }
     @keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+    
+    .status-badge { position: fixed; bottom: 5px; left: 10px; padding: 5px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; z-index: 1000; }
+    .status-badge.online { background: #10b981; color: white; }
+    .status-badge.offline { background: #ef4444; color: white; }
   </style>
 </head>
 <body>
@@ -68,6 +72,12 @@
 
 <!-- TOAST -->
 <div id="toast-container"></div>
+
+<!-- STATUS BADGE -->
+<div id="status-badge" class="status-badge online">
+  <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">cloud_done</span>
+  EN LÍNEA
+</div>
 
 <!-- HEADER -->
 <nav class="nav-app shadow-sm">
@@ -162,24 +172,31 @@
 <script src="db.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// ═══════════════════════════════════════════════════════════════
 // CONFIGURACIÓN
+// ═══════════════════════════════════════════════════════════════
 const CLIENT_ID = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com';
 const SHEET_ID  = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
 const PAGE_SIZE = 20;
 
 const App = {
-    tokenClient : null,
-    accessToken : null,
-    rawData     : [],
-    filtrados   : [],
-    paginaActual: 1,
-    syncInProgress: false
+    tokenClient      : null,
+    accessToken      : null,
+    rawData          : [],
+    filtrados        : [],
+    paginaActual     : 1,
+    syncInProgress   : false,
+    appInitialized   : false,  // NUEVO: Prevenir re-inicialización
+    lastSyncTime     : 0,      // NUEVO: Control de sincronización
+    isSyncing        : false   // NUEVO: Bandera de sincronización activa
 };
 
-const COLUMNAS = ['ID','Expediente','Acumulado','Juzgado','Cliente','Actor','Demandado','Juicio','Monto','Relacionado','Piezas','Estado_Procesal','Entidad_Federativa','Distrito_Judicial_o_Ciudad','Fuero','Recursos','Sentencia','Autorizados','Observaciones','Pendientes','Termino','Ultima_Modificacion','Ubicacion_del_Expediente','Ultima_revision','Nota_rapida'];
+const COLUMNAS = ['ID','Expediente','Acumulado','Juzgado','Cliente','Actor','Demandado','Juicio','Monto','Relacionado','Piezas','Estado_Procesal','Entidad_Federativa','Distrito_Judicial_o_Ciudad','Fuero','Materia','Tipo_Demanda','Accionista','Etapa_Procesal','Escritorio','Ultima_Modificacion','Version','Ubicacion','Tipo_Revision','Nota'];
 const COLUMNAS_NO_EDITABLES = [0, 21, 23];
 
+// ═══════════════════════════════════════════════════════════════
 // TOAST
+// ═══════════════════════════════════════════════════════════════
 function toast(m, t='success') {
     const c = document.getElementById('toast-container');
     const d = document.createElement('div');
@@ -189,74 +206,184 @@ function toast(m, t='success') {
     setTimeout(() => d.remove(), 3000);
 }
 
-// INICIO GIS
+// ═══════════════════════════════════════════════════════════════
+// ESTADO DE CONECTIVIDAD
+// ═══════════════════════════════════════════════════════════════
+function actualizarStatusOnline() {
+    const badge = document.getElementById('status-badge');
+    if (navigator.onLine) {
+        badge.classList.remove('offline');
+        badge.classList.add('online');
+        badge.innerHTML = '<span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">cloud_done</span> EN LÍNEA';
+    } else {
+        badge.classList.remove('online');
+        badge.classList.add('offline');
+        badge.innerHTML = '<span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">cloud_off</span> SIN CONEXIÓN';
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INICIALIZACIÓN GOOGLE (Se ejecuta UNA sola vez)
+// ═══════════════════════════════════════════════════════════════
 window.initGis = async function() {
-    await initDB();
+    // Prevenir múltiples inicializaciones
+    if (App.appInitialized) return;
+    App.appInitialized = true;
+
+    try {
+        await initDB();
+    } catch (e) {
+        console.error('Error inicializando DB:', e);
+        return;
+    }
+
+    // Configurar eventos de conectividad (UNA sola vez)
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Inicializar estado
+    actualizarStatusOnline();
+
+    // Configurar Google Auth
     App.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/spreadsheets',
-        callback: (resp) => {
-            if (resp.access_token) {
-                App.accessToken = resp.access_token;
-                entrarApp();
-            }
-        }
+        callback: handleAuthCallback
     });
-    if (localStorage.getItem('token_saved')) entrarApp();
+
+    // Verificar si hay sesión guardada
+    const savedToken = localStorage.getItem('access_token');
+    if (savedToken) {
+        App.accessToken = savedToken;
+        entrarApp();
+    }
 };
 
-window.iniciarSesion = () => App.tokenClient.requestAccessToken();
-window.cerrarSesion = () => { localStorage.clear(); location.reload(); };
+// ═══════════════════════════════════════════════════════════════
+// CALLBACKS DE AUTENTICACIÓN
+// ═══════════════════════════════════════════════════════════════
+function handleAuthCallback(resp) {
+    if (resp.access_token) {
+        App.accessToken = resp.access_token;
+        localStorage.setItem('access_token', resp.access_token);
+        entrarApp();
+    } else {
+        toast('Error de autenticación', 'error');
+    }
+}
 
+// ═══════════════════════════════════════════════════════════════
+// MANEJO DE EVENTOS DE CONECTIVIDAD
+// ═══════════════════════════════════════════════════════════════
+function handleOnline() {
+    actualizarStatusOnline();
+    toast('Conexión restaurada', 'success');
+    // Esperar un bit antes de sincronizar para asegurar conexión estable
+    setTimeout(window.sincronizarPendientes, 1000);
+}
+
+function handleOffline() {
+    actualizarStatusOnline();
+    toast('Sin conexión - Modo offline', 'warning');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INICIAR/CERRAR SESIÓN
+// ═══════════════════════════════════════════════════════════════
+window.iniciarSesion = () => {
+    if (App.tokenClient) {
+        App.tokenClient.requestAccessToken();
+    }
+};
+
+window.cerrarSesion = () => {
+    localStorage.removeItem('access_token');
+    App.appInitialized = false;
+    location.reload();
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ENTRAR A LA APLICACIÓN
+// ═══════════════════════════════════════════════════════════════
 async function entrarApp() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('search-bar').style.display = 'block';
     document.getElementById('btn-logout-nav').style.display = 'block';
-    consultarDatos();
     
-    // Auto-sync cada vez que recupera conexión
-    window.addEventListener('online', window.sincronizarPendientes);
+    await consultarDatos();
 }
 
-// DATOS
+// ═══════════════════════════════════════════════════════════════
+// CONSULTAR DATOS (Con control de online/offline)
+// ═══════════════════════════════════════════════════════════════
 async function consultarDatos() {
-    if (!navigator.onLine) {
-        const local = await cargarExpedientesLocal();
-        if (local.length) {
-            App.rawData = [COLUMNAS, ...local];
-            renderizar();
+    // Intentar cargar del servidor si estamos en línea
+    if (navigator.onLine && App.accessToken) {
+        try {
+            const resp = await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`,
+                {
+                    headers: { 'Authorization': `Bearer ${App.accessToken}` }
+                }
+            );
+
+            // Si el token expiró
+            if (resp.status === 401) {
+                localStorage.removeItem('access_token');
+                App.accessToken = null;
+                location.reload();
+                return;
+            }
+
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.values) {
+                    App.rawData = data.values;
+                    await guardarExpedientesLocal(data.values);
+                    window.aplicarFiltroFinal();
+                    App.lastSyncTime = Date.now();
+                    
+                    // Intentar sincronizar cambios pendientes
+                    window.sincronizarPendientes();
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error('Error consultando datos:', e);
+            toast('Error cargando del servidor, usando datos locales', 'warning');
         }
-        return;
     }
-    
-    try {
-        const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`, {
-            headers: { 'Authorization': `Bearer ${App.accessToken}` }
-        });
-        const data = await resp.json();
-        if (data.values) {
-            App.rawData = data.values;
-            await guardarExpedientesLocal(data.values);
-            window.aplicarFiltroFinal();
-            // Intentar sincronizar lo que quedó pendiente offline
-            window.sincronizarPendientes();
-        }
-    } catch (e) { toast("Error cargando datos", "error"); }
+
+    // Fallback a datos locales
+    const local = await cargarExpedientesLocal();
+    if (local.length) {
+        App.rawData = [COLUMNAS, ...local];
+        window.aplicarFiltroFinal();
+    } else {
+        toast('No hay datos disponibles', 'error');
+    }
 }
 
-// FILTROS Y RENDER (Resumido para el index)
+// ═══════════════════════════════════════════════════════════════
+// APLICAR FILTROS Y RENDERIZAR
+// ═══════════════════════════════════════════════════════════════
 window.aplicarFiltroFinal = function() {
     let res = App.rawData.slice(1);
     const busq = document.getElementById('busqG').value.toLowerCase();
-    if (busq) res = res.filter(f => f.join(' ').toLowerCase().includes(busq));
+    
+    if (busq) {
+        res = res.filter(f => f.join(' ').toLowerCase().includes(busq));
+    }
     
     App.filtrados = res;
+    App.paginaActual = 1;
     renderizar();
 };
 
 function renderizar() {
     const cont = document.getElementById('lista-expedientes');
     cont.innerHTML = "";
+    
     const inicio = (App.paginaActual - 1) * PAGE_SIZE;
     const fin = inicio + PAGE_SIZE;
     const paged = App.filtrados.slice(inicio, fin);
@@ -267,8 +394,8 @@ function renderizar() {
         card.innerHTML = `
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <h6 class="mb-1 fw-bold">${f[1]}</h6>
-                    <p class="small mb-0 text-muted">${f[4]} | ${f[3]}</p>
+                    <h6 class="mb-1 fw-bold">${f[1] || 'Sin expediente'}</h6>
+                    <p class="small mb-0 text-muted">${f[4] || 'Sin cliente'} | ${f[3] || 'Sin juzgado'}</p>
                     <div class="badge bg-secondary mt-2">${f[11] || 'Sin estado'}</div>
                 </div>
                 <button class="btn-edit" onclick="window.abrirEditar(${inicio + i})">
@@ -278,16 +405,74 @@ function renderizar() {
         `;
         cont.appendChild(card);
     });
+
+    // Renderizar paginación
+    const totalPages = Math.ceil(App.filtrados.length / PAGE_SIZE);
+    renderPaginacion(totalPages);
 }
 
+function renderPaginacion(totalPages) {
+    const pagBar = document.getElementById('pagination-bar');
+    pagBar.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    const container = document.createElement('nav');
+    container.className = 'mt-4';
+    container.innerHTML = `
+        <ul class="pagination justify-content-center">
+            ${App.paginaActual > 1 ? `<li class="page-item"><a class="page-link" onclick="window.cambiarPagina(${App.paginaActual - 1})">Anterior</a></li>` : ''}
+            ${Array.from({length: totalPages}, (_, i) => i + 1).map(p => `
+                <li class="page-item ${p === App.paginaActual ? 'active' : ''}">
+                    <a class="page-link" onclick="window.cambiarPagina(${p})">${p}</a>
+                </li>
+            `).join('')}
+            ${App.paginaActual < totalPages ? `<li class="page-item"><a class="page-link" onclick="window.cambiarPagina(${App.paginaActual + 1})">Siguiente</a></li>` : ''}
+        </ul>
+    `;
+    pagBar.appendChild(container);
+}
+
+window.cambiarPagina = function(p) {
+    App.paginaActual = p;
+    renderizar();
+    window.scrollTo(0, 0);
+};
+
+window.resetearBusquedas = function() {
+    document.getElementById('busqG').value = '';
+    window.aplicarFiltroFinal();
+};
+
+window.toggleCapas = function(capa) {
+    const elemento = document.getElementById(`capa-${capa}`);
+    const boton = document.getElementById(`btn-f-${capa}`);
+    
+    if (elemento.style.display === 'none') {
+        elemento.style.display = 'block';
+        boton.classList.add('activo');
+    } else {
+        elemento.style.display = 'none';
+        boton.classList.remove('activo');
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // EDICIÓN
+// ═══════════════════════════════════════════════════════════════
 window.abrirEditar = function(indexInFiltrados) {
     const fila = App.filtrados[indexInFiltrados];
     const realIndex = App.rawData.findIndex(r => r[0] === fila[0]);
     
+    if (realIndex === -1) {
+        toast('Error: No se encontró el expediente', 'error');
+        return;
+    }
+
     document.getElementById('edit-row-index').value = realIndex;
     document.getElementById('edit-nota').value = fila[24] || "";
     document.getElementById('edit-ubicacion').value = fila[22] || "";
+    document.getElementById('edit-termino').value = fila[19] || "";
     document.getElementById('edit-estado').value = fila[11] || "";
     
     const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
@@ -298,85 +483,144 @@ window.guardarCambios = async function() {
     const ri = parseInt(document.getElementById('edit-row-index').value);
     const nuevaFila = [...App.rawData[ri]];
     
-    // Captura de versión anterior para conflicto futuro (Columna V)
+    // Capturar versión anterior
     const versionAnterior = nuevaFila[21];
 
-    // Updates Simples
+    // Actualizar campos
     nuevaFila[24] = document.getElementById('edit-nota').value;
     nuevaFila[22] = document.getElementById('edit-ubicacion').value;
+    nuevaFila[19] = document.getElementById('edit-termino').value;
     nuevaFila[11] = document.getElementById('edit-estado').value;
-    nuevaFila[21] = new Date().toLocaleString(); // Ultima Modificación
+    nuevaFila[21] = new Date().toLocaleString(); // Última modificación
     nuevaFila[23] = document.getElementById('tipo-revision').value || "DIGITAL";
 
-    // Guardar Local
-    await actualizarExpedienteLocal(nuevaFila[0], nuevaFila);
-    App.rawData[ri] = nuevaFila;
-
-    // Agregar a Cola de Sincronización
-    await agregarCambioQueue({
-        rowIndex: ri,
-        expedienteId: nuevaFila[0],
-        fila: nuevaFila,
-        versionAnterior: versionAnterior,
-        fecha: nuevaFila[21]
-    });
-
-    toast("Cambio guardado localmente");
-    bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
-    window.aplicarFiltroFinal();
-    
-    // Intentar subir
-    window.sincronizarPendientes();
-};
-
-// SINCRONIZACIÓN MAESTRA
-window.sincronizarPendientes = async function() {
-    if (App.syncInProgress || !navigator.onLine || !App.accessToken) return;
-    App.syncInProgress = true;
-
     try {
-        const queue = await obtenerQueuePendiente();
-        if (!queue.length) return;
+        // Guardar localmente
+        await actualizarExpedienteLocal(nuevaFila[0], nuevaFila);
+        App.rawData[ri] = nuevaFila;
 
-        // 1. CONSOLIDACIÓN: Si hay varios cambios del mismo ID, solo el último cuenta
-        const mapa = new Map();
-        queue.forEach(q => mapa.set(q.expedienteId, q));
-        const unicos = Array.from(mapa.values());
+        // Agregar a cola de sincronización
+        await agregarCambioQueue({
+            rowIndex: ri,
+            expedienteId: nuevaFila[0],
+            fila: nuevaFila,
+            versionAnterior: versionAnterior,
+            fecha: nuevaFila[21]
+        });
 
-        for (const item of unicos) {
-            const range = `DB!A${item.rowIndex + 1}:Y${item.rowIndex + 1}`;
-            const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${App.accessToken}` },
-                body: JSON.stringify({ values: [item.fila] })
-            });
-
-            if (resp.ok) {
-                // Limpiar todos los registros de este expediente en la queue original
-                const repetidos = queue.filter(q => q.expedienteId === item.expedienteId);
-                for (let r of repetidos) await eliminarQueueItem(r.queueId);
-            }
-        }
+        toast("Cambio guardado localmente");
+        bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+        window.aplicarFiltroFinal();
         
-        // 2. LOGS: Subir auditoría si existe
-        if (typeof sincronizarLogsOffline === 'function') await sincronizarLogsOffline();
-
-        toast("Sincronización exitosa", "success");
+        // Intentar sincronizar si estamos en línea
+        if (navigator.onLine) {
+            window.sincronizarPendientes();
+        }
     } catch (e) {
-        console.error(e);
-    } finally {
-        App.syncInProgress = false;
+        console.error('Error guardando cambios:', e);
+        toast('Error guardando cambios', 'error');
     }
 };
 
-window.setTipoRevision = (t) => {
+window.setTipoRevision = function(t) {
     document.getElementById('tipo-revision').value = t;
     document.querySelectorAll('.btn-revision').forEach(b => b.classList.remove('activo'));
     event.target.classList.add('activo');
 };
 
-// Carga Inicial
-window.onload = window.initGis;
+window.toggleModoEdicion = function() {
+    const simple = document.getElementById('modo-simple');
+    const completo = document.getElementById('modo-completo');
+    const isChecked = document.getElementById('toggle-edicion').checked;
+    
+    simple.style.display = isChecked ? 'none' : 'block';
+    completo.style.display = isChecked ? 'block' : 'none';
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SINCRONIZACIÓN (Con control de rate limiting)
+// ═══════════════════════════════════════════════════════════════
+window.sincronizarPendientes = async function() {
+    // Evitar múltiples sincronizaciones simultáneas
+    if (App.isSyncing) {
+        console.log('Sincronización ya en progreso...');
+        return;
+    }
+
+    // Rate limiting: máximo 1 sincronización cada 5 segundos
+    const ahora = Date.now();
+    if (ahora - App.lastSyncTime < 5000) {
+        console.log('Esperando antes de próxima sincronización...');
+        return;
+    }
+
+    // No sincronizar si estamos offline o sin token
+    if (!navigator.onLine || !App.accessToken) {
+        return;
+    }
+
+    App.isSyncing = true;
+
+    try {
+        const queue = await obtenerQueuePendiente();
+        if (!queue || queue.length === 0) {
+            App.isSyncing = false;
+            return;
+        }
+
+        // Consolidar cambios duplicados
+        const mapa = new Map();
+        queue.forEach(q => mapa.set(q.expedienteId, q));
+        const unicos = Array.from(mapa.values());
+
+        let sincronizados = 0;
+        for (const item of unicos) {
+            try {
+                const range = `DB!A${item.rowIndex + 1}:Y${item.rowIndex + 1}`;
+                const resp = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+                    {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${App.accessToken}` },
+                        body: JSON.stringify({ values: [item.fila] })
+                    }
+                );
+
+                if (resp.ok) {
+                    // Eliminar todos los registros de este expediente
+                    const repetidos = queue.filter(q => q.expedienteId === item.expedienteId);
+                    for (let r of repetidos) {
+                        await eliminarQueueItem(r.queueId);
+                    }
+                    sincronizados++;
+                } else if (resp.status === 401) {
+                    // Token expirado
+                    localStorage.removeItem('access_token');
+                    App.accessToken = null;
+                    location.reload();
+                    return;
+                }
+            } catch (e) {
+                console.error('Error sincronizando item:', e);
+            }
+        }
+
+        if (sincronizados > 0) {
+            toast(`${sincronizados} cambio(s) sincronizado(s)`, "success");
+        }
+
+        App.lastSyncTime = Date.now();
+    } catch (e) {
+        console.error('Error en sincronización:', e);
+    } finally {
+        App.isSyncing = false;
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INICIALIZACIÓN AL CARGAR
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('load', window.initGis);
 
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
