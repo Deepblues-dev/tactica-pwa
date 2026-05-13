@@ -1161,6 +1161,55 @@ function paginasVisibles(actual, total) {
 // EDICIÓN
 // ════════════════════════════════════════════════════════════
 const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
+  window.abrirNuevoExpediente = function () {
+
+    // Cambiar título del modal
+    document.querySelector('#modalEditar .modal-title')
+        .textContent = 'Nuevo Expediente';
+
+    // Marcar que es un registro nuevo
+    document.getElementById('edit-row-index').value = 'NEW';
+
+    // Limpiar tipo de revisión
+    document.getElementById('tipo-revision').value = '';
+
+    // Quitar selección visual de FÍSICO / DIGITAL
+    document.querySelectorAll('.btn-revision')
+        .forEach(btn => btn.classList.remove('activo'));
+
+    // Limpiar contenedor de edición completa
+    const cont = document.getElementById('contenedor-edicion-completa');
+    cont.innerHTML = '';
+
+    // Generar todos los campos vacíos
+    COLUMNAS.forEach((nombre, i) => {
+
+        // Omitir columnas automáticas:
+        // ID (0), Ultima_Modificacion (21), Ultima_revision (23)
+        if ([0, 21, 23].includes(i)) {
+            return;
+        }
+
+        cont.innerHTML += `
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">
+                    ${nombre}
+                </label>
+                <textarea
+                    class="form-control campo-completo"
+                    rows="2"
+                    data-index="${i}"></textarea>
+            </div>
+        `;
+    });
+
+    // Forzar modo de edición completa
+    document.getElementById('toggle-edicion').checked = true;
+    window.toggleModoEdicion();
+
+    // Mostrar modal
+    modalEdit.show();
+};
 window.toggleModoEdicion = function () {
 
     const completo = document.getElementById('toggle-edicion').checked;
