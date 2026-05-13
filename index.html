@@ -717,8 +717,12 @@ async function validarSesionPeriodicamente() {
         });
 
     // Auto login
-   // Auto login
-if (tokenVigente() || ultimaValidacionVigente()) {
+// Auto login controlado
+if (tokenVigente()) {
+    entrarApp();
+}
+else if (!navigator.onLine && ultimaValidacionVigente()) {
+    // Permitir acceso offline sin token
     entrarApp();
 }
 };
@@ -740,7 +744,6 @@ window.iniciarSesion = () => {
 window.cerrarSesion = () => {
 
     if (App.accessToken) {
-
         google.accounts.oauth2.revoke(
             App.accessToken,
             () => {}
@@ -748,6 +751,7 @@ window.cerrarSesion = () => {
     }
 
     localStorage.removeItem('tokenExpira');
+    localStorage.removeItem('ultimaValidacion');
 
     App.accessToken = null;
     App.tokenExpira = 0;
