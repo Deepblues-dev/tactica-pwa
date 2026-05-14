@@ -760,15 +760,42 @@ function renovarToken() {
         App.tokenClient.requestAccessToken({ prompt: '' });
     }
 }
+window.iniciarSesion = async () => {
 
-window.iniciarSesion = () => {
-    if (App.tokenClient) {
-        App.tokenClient.requestAccessToken({ prompt: 'consent' });
-    } else {
-        toast('Cargando conexión, intenta en un momento...', 'warning');
+    // Si la librería de Google no está disponible
+    if (
+        typeof google === 'undefined' ||
+        !google.accounts ||
+        !google.accounts.oauth2
+    ) {
+        toast(
+            'No se pudo cargar el servicio de autenticación de Google.',
+            'error',
+            6000
+        );
+        return;
     }
-};
 
+    // Si el tokenClient aún no existe, inicializarlo manualmente
+    if (!App.tokenClient) {
+        await window.initGis();
+    }
+
+    // Si sigue sin existir, abortar
+    if (!App.tokenClient) {
+        toast(
+            'No se pudo inicializar el inicio de sesión.',
+            'error',
+            6000
+        );
+        return;
+    }
+
+    // Lanzar selector de cuentas
+    App.tokenClient.requestAccessToken({
+        prompt: 'consent'
+    });
+};
 window.cerrarSesion = () => {
 
     if (App.accessToken) {
