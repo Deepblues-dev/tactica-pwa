@@ -678,9 +678,7 @@ function normalizar(texto) {
     .join('');
 }
 function tokenVigente() {
-
     return (
-        App.accessToken &&
         App.tokenExpira &&
         Date.now() < App.tokenExpira
     );
