@@ -855,12 +855,39 @@ window.cerrarSesion = () => {
     location.reload();
 };
 
-function entrarApp() {
+async function entrarApp() {
+
+    // Mostrar inmediatamente la aplicación
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('search-bar').style.display = 'block';
     document.getElementById('btn-logout-nav').style.display = 'flex';
-    document.getElementById('btn-add-nav').style.display = 'inline-flex';
-    consultarDatos();
+
+    // Si no hay internet, usar datos locales
+    if (!navigator.onLine) {
+        await consultarDatos();
+        return;
+    }
+
+    // Si ya existe token en memoria, consultar directamente
+    if (App.accessToken) {
+        await consultarDatos();
+        return;
+    }
+
+    // Si la sesión sigue vigente, intentar recuperar token silenciosamente
+    if (tokenVigente() && App.tokenClient) {
+        try {
+            App.tokenClient.requestAccessToken({
+                prompt: ''
+            });
+            return; // El callback del token llamará nuevamente a entrarApp()
+        } catch (e) {
+            console.error('No se pudo renovar el token:', e);
+        }
+    }
+
+    // Si no fue posible renovar, cargar al menos datos locales
+    await consultarDatos();
 }
 
 // ════════════════════════════════════════════════════════════
