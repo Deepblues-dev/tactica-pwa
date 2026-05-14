@@ -243,17 +243,6 @@
 
       <!-- LOGOUT -->
       <div>
-<button
-    class="btn-add"
-    id="btn-add-nav"
-    style="display:none;"
-    onclick="window.abrirNuevoExpediente()"
-    title="Nuevo expediente">
-
-    <span class="material-symbols-outlined">
-        add_circle
-    </span>
-</button>
         <button
     class="btn-logout"
     id="btn-logout-nav"
@@ -1188,55 +1177,7 @@ function paginasVisibles(actual, total) {
 // EDICIÓN
 // ════════════════════════════════════════════════════════════
 const modalEdit = new bootstrap.Modal(document.getElementById('modalEditar'));
-  window.abrirNuevoExpediente = function () {
-
-    // Cambiar título del modal
-    document.querySelector('#modalEditar .modal-title')
-        .textContent = 'Nuevo Expediente';
-
-    // Marcar que es un registro nuevo
-    document.getElementById('edit-row-index').value = 'NEW';
-
-    // Limpiar tipo de revisión
-    document.getElementById('tipo-revision').value = '';
-
-    // Quitar selección visual de FÍSICO / DIGITAL
-    document.querySelectorAll('.btn-revision')
-        .forEach(btn => btn.classList.remove('activo'));
-
-    // Limpiar contenedor de edición completa
-    const cont = document.getElementById('contenedor-edicion-completa');
-    cont.innerHTML = '';
-
-    // Generar todos los campos vacíos
-    COLUMNAS.forEach((nombre, i) => {
-
-        // Omitir columnas automáticas:
-        // ID (0), Ultima_Modificacion (21), Ultima_revision (23)
-        if ([0, 21, 23].includes(i)) {
-            return;
-        }
-
-        cont.innerHTML += `
-            <div class="col-md-6">
-                <label class="form-label small fw-bold">
-                    ${nombre}
-                </label>
-                <textarea
-                    class="form-control campo-completo"
-                    rows="2"
-                    data-index="${i}"></textarea>
-            </div>
-        `;
-    });
-
-    // Forzar modo de edición completa
-    document.getElementById('toggle-edicion').checked = true;
-    window.toggleModoEdicion();
-
-    // Mostrar modal
-    modalEdit.show();
-};
+  
 window.toggleModoEdicion = function () {
 
     const completo = document.getElementById('toggle-edicion').checked;
@@ -1528,26 +1469,48 @@ window.guardarCambios = async function () {
             // MODO ONLINE
             // ==================================================
             const requests = [];
+            for (const u of cambiosReales) {
 
-            cambiosReales.forEach(u => {
-                requests.push(
-                    fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
-                        {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization':
-                                    'Bearer ' + App.accessToken,
-                                'Content-Type':
-                                    'application/json'
-                            },
-                            body: JSON.stringify({
-                                values: [[u.value]]
-                            })
-                        }
-                    )
-                );
-            });
+    const response = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
+        {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + App.accessToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                values: [[u.value]]
+            })
+        }
+    );
+
+    if (response.status === 429) {
+        await new Promise(r => setTimeout(r, 1000));
+
+        const retry = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + App.accessToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    values: [[u.value]]
+                })
+            }
+        );
+
+        if (!retry.ok) {
+            throw new Error(`Error Google Sheets ${retry.status}`);
+        }
+    }
+    else if (!response.ok) {
+        throw new Error(`Error Google Sheets ${response.status}`);
+    }
+}
+            );
 
             const responses =
                 await Promise.all(requests);
