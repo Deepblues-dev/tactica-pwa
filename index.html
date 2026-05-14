@@ -135,22 +135,25 @@
     .btn-edit .material-symbols-outlined {
     font-size: 22px !important;
 }
-    .btn-add {
+   .btn-add {
+    background: transparent;
+    border: none;
     color: var(--gold);
     cursor: pointer;
-    border: none;
-    background: none;
-
-    transform: scale(2);
-    transform-origin: center;
-
-    padding: 10px;
-    margin-right: 10px;
-    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
-    .btn-add .material-symbols-outlined {
-    font-size: 22px !important;
+.btn-add .material-symbols-outlined {
+    font-size: 35px !important;
+}
+
+.btn-add:hover {
+    transform: scale(1.1);
+    color: #d8b56f;
 }
     .form-check-input:checked {
     background-color: var(--gold) !important;
@@ -242,10 +245,23 @@
 </div>
 
       <!-- LOGOUT -->
-      <div>
-        <button
-    class="btn-logout"
-    id="btn-logout-nav"
+     <div class="d-flex align-items-center gap-2">
+
+    <button
+        class="btn-add"
+        id="btn-add-nav"
+        style="display:none;"
+        onclick="window.abrirNuevoExpediente()"
+        title="Nuevo expediente">
+
+        <span class="material-symbols-outlined">
+            add_circle
+        </span>
+    </button>
+
+    <button
+        class="btn-logout"
+        id="btn-logout-nav"
     style="
         display:none;
         align-items:center;
@@ -775,7 +791,7 @@ function entrarApp() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('search-bar').style.display = 'block';
     document.getElementById('btn-logout-nav').style.display = 'flex';
-    document.getElementById('btn-add-nav').style.display = 'block';
+    document.getElementById('btn-add-nav').style.display = 'inline-flex';
     consultarDatos();
 }
 
@@ -1260,6 +1276,10 @@ window.abrirEditor = function (index) {
     modalEdit.show();
 };
 
+window.abrirNuevoExpediente = function () {
+    alert('Botón funcionando');
+};
+  
 window.guardarCambios = async function () {
 
     // ==========================================================
