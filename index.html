@@ -155,6 +155,46 @@
     transform: scale(1.1);
     color: #d8b56f;
 }
+
+    .btn-add-inline {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 7px 12px;
+
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+
+    background: var(--gold);
+    color: var(--navy);
+
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    box-shadow: 0 2px 0 #9c7b35;
+    white-space: nowrap;
+}
+
+.btn-add-inline:hover {
+    transform: translateY(1px);
+    box-shadow: none;
+    filter: brightness(1.03);
+}
+
+.btn-add-inline .material-symbols-outlined {
+    font-size: 18px !important;
+}
+
+.btn-add-text {
+    display: inline-block;
+}
+    
     .form-check-input:checked {
     background-color: var(--gold) !important;
     border-color: var(--gold) !important;
