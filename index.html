@@ -664,6 +664,17 @@ function toast(mensaje, tipo = 'success', duracion = 3500) {
 // ════════════════════════════════════════════════════════════
 // UTILIDADES
 // ════════════════════════════════════════════════════════════
+  function sesionLocalVigente() {
+
+    const sesionActiva =
+        localStorage.getItem('sesionActiva') === '1';
+
+    if (!sesionActiva) {
+        return false;
+    }
+
+    return ultimaValidacionVigente();
+}
 function normalizar(texto) {
     return (texto || '').toString().toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -739,7 +750,7 @@ async function validarSesionPeriodicamente() {
     }
 }
 // ════════════════════════════════════════════════════════════
-// AUTENTICACIÓN — token solo en memoria (sin localStorage)
+// AUTENTICACIÓN
 // ════════════════════════════════════════════════════════════
  window.initGis = async function () {
 
@@ -773,6 +784,8 @@ async function validarSesionPeriodicamente() {
                    Date.now().toString()
                    );
 
+                   localStorage.setItem('sesionActiva', '1');                  
+
                     localStorage.setItem(
                         'tokenExpira',
                         App.tokenExpira.toString()
@@ -788,22 +801,12 @@ async function validarSesionPeriodicamente() {
             }
         });
 
-
-// Auto login controlado
-if (tokenVigente()) {
-    entrarApp();
-}
-else if (!navigator.onLine && ultimaValidacionVigente()) {
-    // Permitir acceso offline sin token
-    entrarApp();
-}
-else if (navigator.onLine && ultimaValidacionVigente()) {
-    // Solicitar token silenciosamente sin mostrar consentimiento
-    App.tokenClient.requestAccessToken({
-        prompt: ''
-    });
-}
+    // Auto login basado en marca de sesión local
+    if (sesionLocalVigente()) {
+        entrarApp();
+    }
 };
+ };
 function renovarToken() {
     // Solicita nuevo token silenciosamente (sin popup) si el usuario sigue activo
     if (App.tokenClient) {
@@ -855,7 +858,9 @@ window.cerrarSesion = () => {
         );
     }
 
-    localStorage.removeItem('tokenExpira');
+ localStorage.removeItem('sesionActiva');
+localStorage.removeItem('ultimaValidacion');
+localStorage.removeItem('tokenExpira');
     localStorage.removeItem('ultimaValidacion');
 
     App.accessToken = null;
