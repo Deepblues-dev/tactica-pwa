@@ -1884,17 +1884,101 @@ async function sincronizarPendientes() {
         return;
     }
 
-    // Sin token válido
+    // ─────────────────────────────────────────────
+    // ASEGURAR TOKEN VÁLIDO ANTES DE SINCRONIZAR
+    // ─────────────────────────────────────────────
     if (!App.accessToken) {
-        console.warn('Sin token válido. Sincronización cancelada.');
-        return;
+
+        // Si la sesión ya expiró, no intentar sincronizar
+        if (!ultimaValidacionVigente()) {
+            toast(
+                'La sesión expiró. Inicia sesión para sincronizar.',
+                'warning',
+                6000
+            );
+            return;
+        }
+
+        // Solicitar token silenciosamente
+        try {
+            await new Promise((resolve, reject) => {
+
+                // Respaldar callback original
+                const callbackOriginal =
+                    App.tokenClient.callback;
+
+                // Callback temporal
+                App.tokenClient.callback =
+                    (tokenResponse) => {
+
+                        // Restaurar callback original
+                        App.tokenClient.callback =
+                            callbackOriginal;
+
+                        if (
+                            tokenResponse &&
+                            tokenResponse.access_token
+                        ) {
+                            // Guardar token en memoria
+                            App.accessToken =
+                                tokenResponse.access_token;
+
+                            // Renovar expiración (8 horas)
+                            App.tokenExpira =
+                                Date.now() +
+                                (8 * 60 * 60 * 1000);
+
+                            // Persistir metadatos
+                            localStorage.setItem(
+                                'tokenExpira',
+                                App.tokenExpira.toString()
+                            );
+
+                            localStorage.setItem(
+                                'ultimaValidacion',
+                                Date.now().toString()
+                            );
+
+                            resolve();
+                        } else {
+                            reject(
+                                new Error(
+                                    'No se obtuvo token'
+                                )
+                            );
+                        }
+                    };
+
+                // Solicitud silenciosa
+                App.tokenClient.requestAccessToken({
+                    prompt: ''
+                });
+            });
+
+        } catch (e) {
+
+            console.error(
+                'No fue posible renovar el token:',
+                e
+            );
+
+            toast(
+                'No fue posible sincronizar. Inicia sesión nuevamente.',
+                'warning',
+                6000
+            );
+
+            return;
+        }
     }
 
+    // Marcar proceso activo
     sincronizando = true;
 
     try {
 
-        const pendientes = await obtenerQueuePendiente();
+        const pendientes =
+            await obtenerQueuePendiente();
 
         if (!pendientes.length) {
             return;
@@ -1919,8 +2003,10 @@ async function sincronizarPendientes() {
                             {
                                 method: 'PUT',
                                 headers: {
-                                    Authorization: 'Bearer ' + App.accessToken,
-                                    'Content-Type': 'application/json'
+                                    Authorization:
+                                        'Bearer ' + App.accessToken,
+                                    'Content-Type':
+                                        'application/json'
                                 },
                                 body: JSON.stringify({
                                     values: [[u.value]]
@@ -1930,18 +2016,31 @@ async function sincronizarPendientes() {
                     );
                 });
 
-                const responses = await Promise.all(requests);
+                const responses =
+                    await Promise.all(requests);
 
                 // Verificar respuestas
                 for (const response of responses) {
 
                     if (response.status === 401) {
-                        console.warn('Token expirado. Sincronización detenida.');
+                        console.warn(
+                            'Token expirado. Sincronización detenida.'
+                        );
+
+                        // Limpiar token en memoria
+                        App.accessToken = null;
+                        App.tokenExpira = 0;
+
+                        localStorage.removeItem(
+                            'tokenExpira'
+                        );
+
                         toast(
                             'Sesión expirada. Inicia sesión nuevamente.',
                             'warning',
                             6000
                         );
+
                         return;
                     }
 
@@ -1953,7 +2052,9 @@ async function sincronizarPendientes() {
                 }
 
                 // Eliminar de la queue
-                await eliminarQueueItem(item.queueId);
+                await eliminarQueueItem(
+                    item.queueId
+                );
 
             } catch (e) {
 
@@ -1962,7 +2063,8 @@ async function sincronizarPendientes() {
                     e
                 );
 
-                // Mantener en queue para intentar después
+                // Mantener el item en la queue
+                // para reintentar más tarde
                 break;
             }
         }
