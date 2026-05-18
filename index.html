@@ -675,6 +675,7 @@ function toast(mensaje, tipo = 'success', duracion = 3500) {
 
     return ultimaValidacionVigente();
 }
+  
 function normalizar(texto) {
     return (texto || '').toString().toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -813,41 +814,54 @@ function renovarToken() {
         App.tokenClient.requestAccessToken({ prompt: '' });
     }
 }
-window.iniciarSesion = async () => {
+  window.iniciarSesion = async () => {
 
-    // Si la librería de Google no está disponible
-    if (
-        typeof google === 'undefined' ||
-        !google.accounts ||
-        !google.accounts.oauth2
-    ) {
+    try {
+
+        // Verificar que la librería de Google esté cargada
+        if (
+            typeof google === 'undefined' ||
+            !google.accounts ||
+            !google.accounts.oauth2
+        ) {
+            toast(
+                'Cargando servicio de autenticación. Intenta nuevamente en unos segundos.',
+                'warning',
+                5000
+            );
+            return;
+        }
+
+        // Inicializar si aún no existe el tokenClient
+        if (!App.tokenClient) {
+            await window.initGis();
+        }
+
+        // Validar nuevamente
+        if (!App.tokenClient) {
+            toast(
+                'No se pudo inicializar el inicio de sesión.',
+                'error',
+                6000
+            );
+            return;
+        }
+
+        // Solicitar token y mostrar selector de cuentas
+        App.tokenClient.requestAccessToken({
+            prompt: 'consent'
+        });
+
+    } catch (e) {
+
+        console.error('Error en iniciarSesion:', e);
+
         toast(
-            'No se pudo cargar el servicio de autenticación de Google.',
+            'No se pudo iniciar sesión.',
             'error',
             6000
         );
-        return;
     }
-
-    // Si el tokenClient aún no existe, inicializarlo manualmente
-    if (!App.tokenClient) {
-        await window.initGis();
-    }
-
-    // Si sigue sin existir, abortar
-    if (!App.tokenClient) {
-        toast(
-            'No se pudo inicializar el inicio de sesión.',
-            'error',
-            6000
-        );
-        return;
-    }
-
-    // Lanzar selector de cuentas
-    App.tokenClient.requestAccessToken({
-        prompt: 'consent'
-    });
 };
 window.cerrarSesion = () => {
 
