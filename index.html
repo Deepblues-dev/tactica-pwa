@@ -753,11 +753,46 @@ async function validarSesionPeriodicamente() {
 // ════════════════════════════════════════════════════════════
 // AUTENTICACIÓN
 // ════════════════════════════════════════════════════════════
- window.initGis = async function () {
+
+// Verifica si existe una sesión local aún vigente
+function sesionLocalVigente() {
+
+    const sesionActiva =
+        localStorage.getItem('sesionActiva') === '1';
+
+    const tokenExpira =
+        parseInt(
+            localStorage.getItem('tokenExpira') || '0',
+            10
+        );
+
+    if (!sesionActiva) {
+        return false;
+    }
+
+    if (!tokenExpira) {
+        return false;
+    }
+
+    return Date.now() < tokenExpira;
+}
+
+window.initGis = async function () {
 
     // Inicializar IndexedDB
     await initDB();
 
+    // Verificar que la librería de Google esté disponible
+    if (
+        typeof google === 'undefined' ||
+        !google.accounts ||
+        !google.accounts.oauth2
+    ) {
+        console.error('Google Identity Services no está disponible.');
+        return;
+    }
+
+    // Crear token client
     App.tokenClient =
         google.accounts.oauth2.initTokenClient({
 
@@ -773,52 +808,76 @@ async function validarSesionPeriodicamente() {
                     tokenResponse.access_token
                 ) {
 
+                    // Guardar token en memoria
                     App.accessToken =
                         tokenResponse.access_token;
 
+                    // Vigencia local: 8 horas
                     App.tokenExpira =
                         Date.now() +
                         (8 * 60 * 60 * 1000);
 
-                  localStorage.setItem(
-                  'ultimaValidacion',
-                   Date.now().toString()
-                   );
+                    // Persistencia local
+                    localStorage.setItem(
+                        'sesionActiva',
+                        '1'
+                    );
 
-                   localStorage.setItem('sesionActiva', '1');                  
+                    localStorage.setItem(
+                        'ultimaValidacion',
+                        Date.now().toString()
+                    );
 
                     localStorage.setItem(
                         'tokenExpira',
                         App.tokenExpira.toString()
                     );
 
-                    // Validación automática cada 120 minutos
-                    setInterval(
-                    validarSesionPeriodicamente,
-                    120 * 60 * 1000
-);
+                    // Iniciar validación periódica una sola vez
+                    if (!window._timerValidacionSesion) {
+                        window._timerValidacionSesion =
+                            setInterval(
+                                validarSesionPeriodicamente,
+                                120 * 60 * 1000
+                            );
+                    }
+
+                    // Entrar a la aplicación
                     entrarApp();
                 }
             }
         });
 
-    // Auto login basado en marca de sesión local
+    // Auto acceso usando marca local.
+    // NO solicita token y NO abre popup.
     if (sesionLocalVigente()) {
         entrarApp();
     }
 };
 
+// Renovación silenciosa del token
 function renovarToken() {
-    // Solicita nuevo token silenciosamente (sin popup) si el usuario sigue activo
-    if (App.tokenClient) {
-        App.tokenClient.requestAccessToken({ prompt: '' });
+
+    if (
+        App.tokenClient &&
+        navigator.onLine
+    ) {
+        try {
+            App.tokenClient.requestAccessToken({
+                prompt: ''
+            });
+        } catch (e) {
+            console.warn('No se pudo renovar el token:', e);
+        }
     }
 }
-  window.iniciarSesion = async () => {
+
+// Inicio de sesión manual (clic del usuario)
+window.iniciarSesion = async () => {
 
     try {
 
-        // Verificar que la librería de Google esté cargada
+        // Verificar librería de Google
         if (
             typeof google === 'undefined' ||
             !google.accounts ||
@@ -832,12 +891,12 @@ function renovarToken() {
             return;
         }
 
-        // Inicializar si aún no existe el tokenClient
+        // Inicializar si aún no existe
         if (!App.tokenClient) {
             await window.initGis();
         }
 
-        // Validar nuevamente
+        // Verificar inicialización
         if (!App.tokenClient) {
             toast(
                 'No se pudo inicializar el inicio de sesión.',
@@ -847,14 +906,17 @@ function renovarToken() {
             return;
         }
 
-        // Solicitar token y mostrar selector de cuentas
+        // Mostrar selector de cuentas
         App.tokenClient.requestAccessToken({
             prompt: 'consent'
         });
 
     } catch (e) {
 
-        console.error('Error en iniciarSesion:', e);
+        console.error(
+            'Error en iniciarSesion:',
+            e
+        );
 
         toast(
             'No se pudo iniciar sesión.',
@@ -863,26 +925,43 @@ function renovarToken() {
         );
     }
 };
+
+// Cerrar sesión
 window.cerrarSesion = () => {
 
-    if (App.accessToken) {
+    // Revocar token si existe
+    if (
+        App.accessToken &&
+        typeof google !== 'undefined' &&
+        google.accounts &&
+        google.accounts.oauth2
+    ) {
         google.accounts.oauth2.revoke(
             App.accessToken,
             () => {}
         );
     }
 
- localStorage.removeItem('sesionActiva');
-localStorage.removeItem('ultimaValidacion');
-localStorage.removeItem('tokenExpira');
+    // Limpiar datos locales de sesión
+    localStorage.removeItem('sesionActiva');
     localStorage.removeItem('ultimaValidacion');
+    localStorage.removeItem('tokenExpira');
 
+    // Limpiar memoria
     App.accessToken = null;
     App.tokenExpira = 0;
 
+    // Detener timer si existe
+    if (window._timerValidacionSesion) {
+        clearInterval(
+            window._timerValidacionSesion
+        );
+        window._timerValidacionSesion = null;
+    }
+
+    // Recargar aplicación
     location.reload();
 };
-
 async function entrarApp() {
 
     // Mostrar inmediatamente la aplicación
