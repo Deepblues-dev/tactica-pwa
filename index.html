@@ -1749,7 +1749,16 @@ if ('serviceWorker' in navigator) {
 <script>
 
 </script>  
-<script src="https://accounts.google.com/gsi/client" onload="window.initGis()">
+<script src="https://accounts.google.com/gsi/client"></script>
+
+<script>
+window.addEventListener('load', async () => {
+    if (typeof window.initGis === 'function') {
+        await window.initGis();
+    } else {
+        console.error('window.initGis no está definida');
+    }
+});
 </script>
 
 <script>
