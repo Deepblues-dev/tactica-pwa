@@ -346,10 +346,9 @@
                 <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px;">refresh</span>
             </button>
         </div>
+<div class="d-flex align-items-center mt-2">
 
-    <div class="d-flex align-items-center mt-2">
-
-    <!-- Botones de filtros -->
+    <!-- Grupo de filtros -->
     <div class="filter-btn-group flex-grow-1 mb-0">
         <button class="filter-btn" id="btn-f-cliente" onclick="window.toggleCapas('cliente')">
             <span class="material-symbols-outlined">person</span> CLIENTE
@@ -364,28 +363,27 @@
         </button>
     </div>
 
-    <!-- Botón Nuevo Expediente -->
+    <!-- Nuevo expediente -->
     <button
         id="btn-add-nav"
-        class="btn ms-3 d-flex align-items-center gap-2 fw-bold"
         onclick="window.abrirNuevoExpediente()"
         title="Nuevo expediente"
+        class="filter-btn ms-2"
         style="
+            flex: 0 0 auto;
+            max-width: none;
             background: var(--gold);
             color: var(--navy);
-            border: 2px solid var(--gold);
+            border-color: var(--gold);
+            box-shadow: 0 2px 0 #9c7a3d;
             white-space: nowrap;
-            font-size: 0.78rem;
-            letter-spacing: 0.4px;
         ">
-        <span class="material-symbols-outlined" style="font-size:18px;">
-            add_circle
-        </span>
+        <span class="material-symbols-outlined">add_circle</span>
         NUEVO EXPEDIENTE
     </button>
 
 </div>
-        <div id="area-filtros" style="display:none;" class="sub-filter-box mt-3">
+         <div id="area-filtros" style="display:none;" class="sub-filter-box mt-3">
             <div id="capa-cliente" style="display:none;">
                 <label class="small fw-bold text-muted mb-1">Filtrar por Cliente</label>
                 <select id="sel-cliente" class="form-select mb-2" onchange="window.aplicarFiltroFinal()"></select>
@@ -940,8 +938,29 @@ if (!navigator.onLine) {
     return;
 }
 
-// SIN TOKEN
-if (!App.accessToken) { toast('Sesión expirada. Ingresa de nuevo.', 'warning'); window.cerrarSesion(); return; }
+// SIN TOKEN EN MEMORIA
+if (!App.accessToken) {
+
+    // Si existe una sesión válida, cargar datos locales mientras se renueva el token
+    if (tokenVigente() || ultimaValidacionVigente()) {
+
+        const datosLocales = await cargarExpedientesLocal();
+
+        if (datosLocales.length > 0) {
+            App.rawData = [COLUMNAS, ...datosLocales];
+            prepararFiltros();
+            App.paginaActual = 1;
+            App.filtrados = App.rawData.slice(1);
+            window.aplicarFiltroFinal();
+        }
+
+        return;
+    }
+
+    toast('Sesión expirada. Ingresa de nuevo.', 'warning');
+    window.cerrarSesion();
+    return;
+}
     
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
     try {
