@@ -347,33 +347,44 @@
             </button>
         </div>
 
-        <div class="filter-btn-group">
-            <button class="filter-btn" id="btn-f-cliente" onclick="window.toggleCapas('cliente')">
-                <span class="material-symbols-outlined">person</span> CLIENTE
-            </button>
-            <button class="filter-btn" id="btn-f-fuero" onclick="window.toggleCapas('fuero')">
-                <span class="material-symbols-outlined">location_on</span> LUGAR
-            </button>
-            <button class="filter-btn" id="btn-f-exp" onclick="window.toggleCapas('exp')">
-                <span class="material-symbols-outlined">folder</span> EXPEDIENTE
-            </button>
-          <button
-    class="btn-add-inline"
-    id="btn-add-nav"
-    style="display:none;"
-    onclick="window.abrirNuevoExpediente()"
-    title="Nuevo expediente">
+    <div class="d-flex align-items-center mt-2">
 
-    <span class="material-symbols-outlined">
-        add_circle
-    </span>
+    <!-- Botones de filtros -->
+    <div class="filter-btn-group flex-grow-1 mb-0">
+        <button class="filter-btn" id="btn-f-cliente" onclick="window.toggleCapas('cliente')">
+            <span class="material-symbols-outlined">person</span> CLIENTE
+        </button>
 
-    <span class="btn-add-text">
+        <button class="filter-btn" id="btn-f-fuero" onclick="window.toggleCapas('fuero')">
+            <span class="material-symbols-outlined">location_on</span> LUGAR
+        </button>
+
+        <button class="filter-btn" id="btn-f-exp" onclick="window.toggleCapas('exp')">
+            <span class="material-symbols-outlined">folder</span> EXPEDIENTE
+        </button>
+    </div>
+
+    <!-- Botón Nuevo Expediente -->
+    <button
+        id="btn-add-nav"
+        class="btn ms-3 d-flex align-items-center gap-2 fw-bold"
+        onclick="window.abrirNuevoExpediente()"
+        title="Nuevo expediente"
+        style="
+            background: var(--gold);
+            color: var(--navy);
+            border: 2px solid var(--gold);
+            white-space: nowrap;
+            font-size: 0.78rem;
+            letter-spacing: 0.4px;
+        ">
+        <span class="material-symbols-outlined" style="font-size:18px;">
+            add_circle
+        </span>
         NUEVO EXPEDIENTE
-    </span>
-</button>
-        </div>
+    </button>
 
+</div>
         <div id="area-filtros" style="display:none;" class="sub-filter-box mt-3">
             <div id="capa-cliente" style="display:none;">
                 <label class="small fw-bold text-muted mb-1">Filtrar por Cliente</label>
