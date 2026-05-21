@@ -777,22 +777,16 @@ function sesionLocalVigente() {
     return Date.now() < tokenExpira;
 }
 
+// ════════════════════════════════════════════════════════════
+// AUTENTICACIÓN
+// ════════════════════════════════════════════════════════════
+
 window.initGis = async function () {
 
     // Inicializar IndexedDB
     await initDB();
 
-    // Verificar que la librería de Google esté disponible
-    if (
-        typeof google === 'undefined' ||
-        !google.accounts ||
-        !google.accounts.oauth2
-    ) {
-        console.error('Google Identity Services no está disponible.');
-        return;
-    }
-
-    // Crear token client
+    // Crear cliente OAuth
     App.tokenClient =
         google.accounts.oauth2.initTokenClient({
 
@@ -812,20 +806,20 @@ window.initGis = async function () {
                     App.accessToken =
                         tokenResponse.access_token;
 
-                    // Vigencia local: 8 horas
+                    // Vigencia local de 8 horas
                     App.tokenExpira =
                         Date.now() +
                         (8 * 60 * 60 * 1000);
 
-                    // Persistencia local
-                    localStorage.setItem(
-                        'sesionActiva',
-                        '1'
-                    );
-
+                    // Persistir marca de sesión
                     localStorage.setItem(
                         'ultimaValidacion',
                         Date.now().toString()
+                    );
+
+                    localStorage.setItem(
+                        'sesionActiva',
+                        '1'
                     );
 
                     localStorage.setItem(
@@ -833,51 +827,77 @@ window.initGis = async function () {
                         App.tokenExpira.toString()
                     );
 
-                    // Iniciar validación periódica una sola vez
-                    if (!window._timerValidacionSesion) {
-                        window._timerValidacionSesion =
+                    // Programar renovación silenciosa cada 120 minutos
+                    if (!App.timerRenovacion) {
+                        App.timerRenovacion =
                             setInterval(
                                 validarSesionPeriodicamente,
                                 120 * 60 * 1000
                             );
                     }
 
-                    // Entrar a la aplicación
+                    // Entrar y cargar datos
                     entrarApp();
                 }
             }
         });
 
-    // Auto acceso usando marca local.
-    // NO solicita token y NO abre popup.
+    // =======================================================
+    // AUTO LOGIN EN REFRESH
+    // =======================================================
+    // Si existe marca local válida, se entra inmediatamente
+    // sin mostrar popup ni pedir login.
+    // Los datos se cargarán desde IndexedDB.
+    // =======================================================
     if (sesionLocalVigente()) {
+
+        // Restaurar vigencia local
+        App.tokenExpira = parseInt(
+            localStorage.getItem('tokenExpira') || '0'
+        );
+
+        // Entrar directamente (sin token)
         entrarApp();
+
+        // Si hay internet, intentar obtener token silencioso
+        // después de que la aplicación ya esté visible.
+        if (navigator.onLine) {
+
+            setTimeout(() => {
+
+                try {
+                    App.tokenClient.requestAccessToken({
+                        prompt: ''
+                    });
+                } catch (e) {
+                    console.warn(
+                        'No se pudo renovar token silenciosamente:',
+                        e
+                    );
+                }
+
+            }, 2000);
+        }
     }
 };
 
-// Renovación silenciosa del token
 function renovarToken() {
 
     if (
         App.tokenClient &&
         navigator.onLine
     ) {
-        try {
-            App.tokenClient.requestAccessToken({
-                prompt: ''
-            });
-        } catch (e) {
-            console.warn('No se pudo renovar el token:', e);
-        }
+        App.tokenClient.requestAccessToken({
+            prompt: ''
+        });
     }
 }
 
-// Inicio de sesión manual (clic del usuario)
 window.iniciarSesion = async () => {
 
     try {
 
-        // Verificar librería de Google
+        // Verificar librería Google
         if (
             typeof google === 'undefined' ||
             !google.accounts ||
@@ -891,12 +911,12 @@ window.iniciarSesion = async () => {
             return;
         }
 
-        // Inicializar si aún no existe
+        // Inicializar cliente si no existe
         if (!App.tokenClient) {
             await window.initGis();
         }
 
-        // Verificar inicialización
+        // Validar nuevamente
         if (!App.tokenClient) {
             toast(
                 'No se pudo inicializar el inicio de sesión.',
@@ -906,7 +926,7 @@ window.iniciarSesion = async () => {
             return;
         }
 
-        // Mostrar selector de cuentas
+        // Abrir selector de cuentas (acción del usuario)
         App.tokenClient.requestAccessToken({
             prompt: 'consent'
         });
@@ -926,10 +946,9 @@ window.iniciarSesion = async () => {
     }
 };
 
-// Cerrar sesión
 window.cerrarSesion = () => {
 
-    // Revocar token si existe
+    // Revocar token actual
     if (
         App.accessToken &&
         typeof google !== 'undefined' &&
@@ -942,7 +961,13 @@ window.cerrarSesion = () => {
         );
     }
 
-    // Limpiar datos locales de sesión
+    // Limpiar timer
+    if (App.timerRenovacion) {
+        clearInterval(App.timerRenovacion);
+        App.timerRenovacion = null;
+    }
+
+    // Limpiar almacenamiento local
     localStorage.removeItem('sesionActiva');
     localStorage.removeItem('ultimaValidacion');
     localStorage.removeItem('tokenExpira');
@@ -950,14 +975,7 @@ window.cerrarSesion = () => {
     // Limpiar memoria
     App.accessToken = null;
     App.tokenExpira = 0;
-
-    // Detener timer si existe
-    if (window._timerValidacionSesion) {
-        clearInterval(
-            window._timerValidacionSesion
-        );
-        window._timerValidacionSesion = null;
-    }
+    App.tokenClient = null;
 
     // Recargar aplicación
     location.reload();
