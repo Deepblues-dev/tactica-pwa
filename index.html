@@ -942,22 +942,7 @@ window.initGis = async function () {
 
         // Si hay internet, intentar obtener token silencioso
         // después de que la aplicación ya esté visible.
-        if (navigator.onLine) {
-
-            setTimeout(() => {
-
-                try {
-                    App.tokenClient.requestAccessToken({
-                        prompt: ''
-                    });
-                } catch (e) {
-                    console.warn(
-                        'No se pudo renovar token silenciosamente:',
-                        e
-                    );
-                }
-
-            }, 2000);
+        
         }
     }
 };
