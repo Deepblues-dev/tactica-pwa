@@ -366,7 +366,7 @@
     <!-- Nuevo expediente -->
     <button
         id="btn-add-nav"
-        onclick="window.abrirNuevoExpediente()"
+        onclick="window.nuevoExpediente()"
         title="Nuevo expediente"
         class="filter-btn ms-2"
         style="
@@ -1517,8 +1517,71 @@ window.abrirEditor = function (index) {
     modalEdit.show();
 };
 
-window.abrirNuevoExpediente = function () {
-    alert('Botón funcionando');
+//window.abrirNuevoExpediente = function () {
+    //alert('Botón funcionando');
+//};
+  window.nuevoExpediente = async function () {
+
+    const numero = prompt('Número de expediente:');
+    if (!numero) return;
+
+    const cliente = prompt('Nombre del cliente:');
+    if (!cliente) return;
+
+    const asunto = prompt('Asunto:');
+    if (!asunto) return;
+
+    const fecha = new Date().toISOString().split('T')[0];
+
+    // Generar ID único
+    const id = 'EXP-' + Date.now();
+
+    // Construir objeto del expediente
+    const expediente = {
+        id,
+        numero,
+        cliente,
+        asunto,
+        fecha,
+        estatus: 'Activo'
+    };
+
+    try {
+
+        // Guardar localmente
+        await guardarNuevoExpedienteLocal(expediente);
+
+        // Si hay internet y token, guardar en Google Sheets
+        if (navigator.onLine && App.accessToken) {
+            await guardarNuevoExpedienteRemoto(expediente);
+        }
+        else {
+            // Si está offline, guardar en queue
+            await agregarNuevoExpedienteAQueue(expediente);
+        }
+
+        toast(
+            'Expediente creado correctamente.',
+            'success',
+            4000
+        );
+
+        // Recargar información
+        await consultarDatos();
+
+    } catch (e) {
+
+        console.error(
+            'Error al crear expediente:',
+            e
+        );
+
+        toast(
+            'No se pudo crear el expediente.',
+            'error',
+            6000
+        );
+    }
 };
   
 window.guardarCambios = async function () {
