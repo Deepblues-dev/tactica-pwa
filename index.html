@@ -748,7 +748,7 @@ async function guardarNuevoExpedienteLocal(expediente) {
         const tx = db.transaction(
             ['expedientes'],
             'readwrite'
-        );
+        );    
 
         const store = tx.objectStore('expedientes');
 
@@ -944,8 +944,7 @@ window.initGis = async function () {
         // después de que la aplicación ya esté visible.
         
         }
-    }
-};
+    };
 
 function renovarToken() {
 
