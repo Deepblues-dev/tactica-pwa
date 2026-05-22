@@ -963,7 +963,7 @@ window.iniciarSesion = async () => {
 
     try {
 
-        // Verificar librería Google
+        // Verificar que la librería de Google esté cargada
         if (
             typeof google === 'undefined' ||
             !google.accounts ||
@@ -977,7 +977,7 @@ window.iniciarSesion = async () => {
             return;
         }
 
-        // Inicializar cliente si no existe
+        // Inicializar el tokenClient si aún no existe
         if (!App.tokenClient) {
             await window.initGis();
         }
@@ -992,9 +992,11 @@ window.iniciarSesion = async () => {
             return;
         }
 
-        // Abrir selector de cuentas (acción del usuario)
+        // IMPORTANTE:
+        // Siempre abrir el popup de Google cuando el usuario
+        // haga clic explícitamente en el botón.
         App.tokenClient.requestAccessToken({
-            prompt: 'consent'
+            prompt: 'select_account'
         });
 
     } catch (e) {
@@ -1011,7 +1013,6 @@ window.iniciarSesion = async () => {
         );
     }
 };
-
 window.cerrarSesion = () => {
 
     // Revocar token actual
