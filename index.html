@@ -977,10 +977,7 @@ window.iniciarSesion = async () => {
             return;
         }
 
-        // Inicializar el tokenClient si aún no existe
-        if (!App.tokenClient) {
-            await window.initGis();
-        }
+       
 
         // Validar nuevamente
         if (!App.tokenClient) {
