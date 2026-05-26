@@ -657,6 +657,52 @@ const COLUMNAS_NO_EDITABLES = [
 ];
 
 // ════════════════════════════════════════════════════════════
+// CAPAS DE DATOS — control de visibilidad por sesión
+// ════════════════════════════════════════════════════════════
+//
+// CAPA 1 — Pública offline: siempre visible
+// CAPA 2 — Privada móvil:   visible solo con token válido (online + OAuth)
+// CAPA 3 — Completa:        (reservado — implementación futura escritorio)
+//
+// 🚩 REDFLAG: Este control es SOLO de renderizado.
+//    Cuando se implemente cifrado real, IndexedDB deberá
+//    guardar únicamente índices de Capa 1 sin sesión activa.
+//    Los datos de Capa 2/3 solo deben persistir cifrados.
+// ════════════════════════════════════════════════════════════
+
+const CAPAS = {
+
+    // Índices que NUNCA se muestran en cards (ID interno)
+    ocultos: [0],
+
+    // Capa 1: visible siempre (offline sin token)
+    publica: [1, 3, 7, 10, 13, 14, 22, 23, 24],
+
+    // Capa 2: visible solo con token válido en memoria
+    privadaMovil: [2, 4, 5, 6, 8, 9, 11, 12, 15, 16, 17, 18, 19, 20, 21],
+
+    // Capa 3: reservado (escritorio + clave maestra)
+    // privadaDesktop: []  ← implementación futura
+};
+
+// Devuelve true si el usuario tiene sesión activa con token
+function tieneAccesoPrivado() {
+    return !!(App.accessToken && tokenVigente());
+}
+
+// Devuelve el valor de un campo respetando la capa de acceso.
+// Si el campo está bloqueado, devuelve el marcador visual.
+function campo(f, idx) {
+    if (CAPAS.ocultos.includes(idx))        return null;
+    if (CAPAS.publica.includes(idx))        return f[idx] || null;
+    if (CAPAS.privadaMovil.includes(idx)) {
+        if (tieneAccesoPrivado())           return f[idx] || null;
+        return '--- Validar Credenciales ---';
+    }
+    return null;
+}
+
+// ════════════════════════════════════════════════════════════
 // TOAST — notificaciones no bloqueantes
 // ════════════════════════════════════════════════════════════
 function toast(mensaje, tipo = 'success', duracion = 3500) {
@@ -1472,75 +1518,122 @@ function renderCards(filas) {
     // Cards
     const contenedor = document.getElementById('lista-expedientes');
     contenedor.innerHTML = '';
-   slice.forEach(f => {
-    const realIndex = App.rawData.findIndex(r => r[1] === f[1]);
+    slice.forEach(f => {
+        const realIndex = App.rawData.findIndex(r => r[1] === f[1]);
+        const acceso    = tieneAccesoPrivado();
 
-    const pendientes = f[19]
-        ? `<div class="small mt-2"><span class="fw-bold">Pendientes:</span> ${f[19]}</div>`
-        : '';
+        // ── Helpers de campo con capa ──
+        const c = idx => campo(f, idx);
 
-    const termino = f[20]
-        ? `<div class="small"><span class="fw-bold">Término:</span> ${f[20]}</div>`
-        : '';
+        // Campos Capa 2 bloqueados: estilo visual diferenciado
+        const bloqueado = idx =>
+            !acceso && CAPAS.privadaMovil.includes(idx);
 
-    contenedor.innerHTML += `
+        const celdaPrivada = (idx, label) => {
+            const val = c(idx);
+            if (val === null) return '';
+            if (bloqueado(idx)) {
+                return `<div class="small mb-1 text-muted fst-italic">
+                    <span class="fw-bold">${label}:</span>
+                    <span style="color:#aaa;letter-spacing:0.03em;">— Validar Credenciales —</span>
+                </div>`;
+            }
+            return `<div class="small mb-1">
+                <span class="fw-bold">${label}:</span> ${val}
+            </div>`;
+        };
+
+        // Pendientes y Término (Capa 2)
+        const pendientesVal = c(19);
+        const terminoVal    = c(20);
+
+        const pendientes = pendientesVal && !bloqueado(19)
+            ? `<div class="small mt-2"><span class="fw-bold">Pendientes:</span> ${pendientesVal}</div>`
+            : bloqueado(19)
+                ? `<div class="small mt-2 text-muted fst-italic"><span class="fw-bold">Pendientes:</span> <span style="color:#aaa;">— Validar Credenciales —</span></div>`
+                : '';
+
+        const termino = terminoVal && !bloqueado(20)
+            ? `<div class="small"><span class="fw-bold">Término:</span> ${terminoVal}</div>`
+            : bloqueado(20)
+                ? `<div class="small text-muted fst-italic"><span class="fw-bold">Término:</span> <span style="color:#aaa;">— Validar Credenciales —</span></div>`
+                : '';
+
+        // Estado Procesal (Capa 2)
+        const estadoVal    = c(11);
+        const estadoBloque = bloqueado(11);
+        const estadoHtml   = estadoBloque
+            ? `<span class="fst-italic" style="color:#aaa;">— Validar Credenciales —</span>`
+            : (estadoVal || 'Sin novedades.');
+
+        // Última Modificación (Capa 2)
+        const ultModVal    = c(21);
+        const ultModHtml   = bloqueado(21)
+            ? `<span style="color:#aaa;">—</span>`
+            : (ultModVal || '---');
+
+        // Badge offline si no hay acceso privado
+        const badgeOffline = !acceso
+            ? `<div class="text-end mb-1" style="font-size:0.6rem;">
+                <span style="background:#f0ad4e22;color:#b8860b;padding:2px 6px;border-radius:4px;border:1px solid #f0ad4e55;">
+                    🔒 Modo público
+                </span>
+               </div>`
+            : '';
+
+        contenedor.innerHTML += `
         <div class="card card-exp">
+            ${badgeOffline}
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="small text-muted fw-bold">
-                        ${f[13] || '---'} | ${f[14] || '---'}
+                        ${c(13) || '---'} | ${c(14) || '---'}
                     </div>
-
                     <div class="small text-secondary">
-                        ${f[3] || '---'}
+                        ${c(3) || '---'}
                     </div>
                 </div>
-
                 <button class="btn-edit" onclick="abrirEditor(${realIndex})" title="Editar">
                     <span class="material-symbols-outlined">edit_note</span>
                 </button>
             </div>
 
-            <div class="h6 fw-bold text-navy mt-2 mb-1" style="color:var(--navy);">
-                EXP: ${f[1] || '---'}
+            <div class="h6 fw-bold mt-2 mb-1" style="color:var(--navy);">
+                EXP: ${c(1) || '---'}
             </div>
 
             <div class="small mb-1">
-                <span class="fw-bold">Juicio:</span> ${f[7] || '---'}
+                <span class="fw-bold">Juicio:</span> ${c(7) || '---'}
             </div>
 
-            <div class="small mb-1">
-                <span class="fw-bold">Actor:</span> ${f[5] || '---'}
-            </div>
-
-            <div class="small mb-2">
-                <span class="fw-bold">Demandado:</span> ${f[6] || '---'}
-            </div>
+            ${celdaPrivada(5,  'Actor')}
+            ${celdaPrivada(6,  'Demandado')}
+            ${celdaPrivada(4,  'Cliente')}
+            ${celdaPrivada(2,  'Acumulado')}
 
             <div class="p-2 bg-light rounded small border-start border-warning border-3 mb-2">
                 <div class="fw-bold mb-1">Estado Procesal</div>
-                ${f[11] || 'Sin novedades.'}
+                ${estadoHtml}
             </div>
 
             <div class="small mb-1">
-                <span class="fw-bold">Ubicación:</span> ${f[22] || '---'}
+                <span class="fw-bold">Ubicación:</span> ${c(22) || '---'}
             </div>
 
-            <div class="small mb-1">
-                <span class="fw-bold">Autorizados:</span> ${f[17] || '---'}
-            </div>
+            ${celdaPrivada(17, 'Autorizados')}
+            ${celdaPrivada(9,  'Relacionado')}
 
             ${pendientes}
             ${termino}
 
             <div class="small mt-2 p-2 rounded" style="background:#fff8e8; border-left:3px solid var(--gold);">
                 <span class="fw-bold">Nota rápida:</span>
-                ${f[24] || 'Sin nota'}
+                ${c(24) || 'Sin nota'}
             </div>
 
             <div class="text-end mt-2" style="font-size: 0.65rem; color: var(--gold);">
-                <div>Rev: ${f[21] || '---'}</div>
-                <div>Última revisión: ${f[23] || '---'}</div>
+                <div>Rev: ${ultModHtml}</div>
+                <div>Última revisión: ${c(23) || '---'}</div>
             </div>
         </div>`;
 });
