@@ -611,17 +611,16 @@ localStorage.setItem(
 
 // ── Estado de la app (encapsulado, fuera de window) ──
 const App = {
-    tokenClient : null,
-
-    accessToken : null,
-  
-    tokenExpira :
-    parseInt(localStorage.getItem('tokenExpira') || '0'),
-  
-    rawData     : [],
-    filtrados   : [],
-    paginaActual: 1,
-    ordenActual : 'recientes',
+    tokenClient        : null,
+    accessToken        : null,
+    tokenExpira        : parseInt(localStorage.getItem('tokenExpira') || '0'),
+    rawData            : [],
+    filtrados          : [],
+    paginaActual       : 1,
+    ordenActual        : 'recientes',
+    timerRenovacion    : null,
+    _silenciosoTimeout : null,   // timeout de seguridad para renovación silenciosa
+    _entrandoApp       : false,  // evita doble llamada a entrarApp()
 };
   const COLUMNAS = [
     'ID',
@@ -926,8 +925,19 @@ window.initGis = async function () {
                             );
                     }
 
-                    // Entrar y cargar datos
-                    entrarApp();
+                    // ── Cancelar timeout de seguridad si estaba corriendo ──
+                    if (App._silenciosoTimeout) {
+                        clearTimeout(App._silenciosoTimeout);
+                        App._silenciosoTimeout = null;
+                    }
+
+                    // Entrar y cargar datos (evitar doble llamada)
+                    if (!App._entrandoApp) {
+                        App._entrandoApp = true;
+                        entrarApp().finally(() => {
+                            App._entrandoApp = false;
+                        });
+                    }
                 }
             }
         });
@@ -941,19 +951,48 @@ window.initGis = async function () {
     // =======================================================
     if (sesionLocalVigente()) {
 
-        // Restaurar vigencia local
+        // Restaurar vigencia local del token
         App.tokenExpira = parseInt(
             localStorage.getItem('tokenExpira') || '0'
         );
 
-        // Entrar directamente (sin token)
-        entrarApp();
-
-        // Si hay internet, intentar obtener token silencioso
-        // después de que la aplicación ya esté visible.
-        
+        // ── Entrar inmediatamente con datos locales ──
+        // La app se muestra al instante, sin esperar red ni token.
+        if (!App._entrandoApp) {
+            App._entrandoApp = true;
+            entrarApp().finally(() => {
+                App._entrandoApp = false;
+            });
         }
-    };
+
+        // ── Renovar token silenciosamente si hay conexión ──
+        // Se hace DESPUÉS de entrar para no bloquear la UI.
+        if (navigator.onLine) {
+
+            const emailGuardado =
+                localStorage.getItem('userEmail') || '';
+
+            // Timeout de seguridad: si en 12s no llega respuesta del token,
+            // se cancela silenciosamente. El usuario ya está dentro.
+            App._silenciosoTimeout = setTimeout(() => {
+                App._silenciosoTimeout = null;
+                console.warn('[Táctica] Token silencioso: timeout. Usando datos locales.');
+            }, 12000);
+
+            try {
+                App.tokenClient.requestAccessToken({
+                    prompt    : '',            // SIN popup ni selector de cuenta
+                    login_hint: emailGuardado  // Cuenta ya conocida
+                });
+            } catch (e) {
+                clearTimeout(App._silenciosoTimeout);
+                App._silenciosoTimeout = null;
+                console.warn('[Táctica] Token silencioso: error al solicitar.', e);
+            }
+        }
+
+    }
+};
 
 function renovarToken() {
 
@@ -964,6 +1003,43 @@ function renovarToken() {
         App.tokenClient.requestAccessToken({
             prompt: ''
         });
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// OBTENER EMAIL DEL USUARIO Y GUARDARLO PARA LOGIN_HINT
+// ════════════════════════════════════════════════════════════
+// Se llama una vez después del primer login exitoso.
+// El email se guarda en localStorage para login_hint
+// en renovaciones silenciosas futuras (sin popup).
+async function obtenerYGuardarEmail() {
+
+    if (!App.accessToken) return;
+
+    // Si ya lo tenemos guardado, no repetir la llamada
+    if (localStorage.getItem('userEmail')) return;
+
+    try {
+        const res = await fetch(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            {
+                headers: {
+                    'Authorization': 'Bearer ' + App.accessToken
+                }
+            }
+        );
+
+        if (!res.ok) return;
+
+        const info = await res.json();
+
+        if (info.email) {
+            localStorage.setItem('userEmail', info.email);
+            console.log('[Táctica] Email guardado para login_hint:', info.email);
+        }
+
+    } catch (e) {
+        console.warn('[Táctica] No se pudo obtener email de userInfo:', e);
     }
 }
 
@@ -1043,6 +1119,7 @@ window.cerrarSesion = () => {
     localStorage.removeItem('sesionActiva');
     localStorage.removeItem('ultimaValidacion');
     localStorage.removeItem('tokenExpira');
+    localStorage.removeItem('userEmail');  // limpiar login_hint al cerrar sesión
 
     // Limpiar memoria
     App.accessToken = null;
@@ -1067,6 +1144,7 @@ async function entrarApp() {
 
     // Si ya existe token en memoria, consultar directamente
     if (App.accessToken) {
+        obtenerYGuardarEmail(); // sin await — no bloquea la UI
         await consultarDatos();
         return;
     }
