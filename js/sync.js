@@ -45,8 +45,23 @@ async function consultarDatos() {
         });
 
         if (response.status === 401) {
-            toast('Sesión expirada. Vuelve a ingresar.', 'warning');
-            window.cerrarSesion();
+            // Token expirado: intentar renovación silenciosa antes de cerrar sesión
+            App.accessToken = null;
+            App.tokenExpira = 0;
+            localStorage.removeItem('tokenExpira');
+
+            if (App.tokenClient && navigator.onLine) {
+                const emailGuardado = localStorage.getItem('userEmail') || '';
+                toast('Renovando sesión...', 'warning', 3000);
+                App.tokenClient.requestAccessToken({
+                    prompt    : '',
+                    login_hint: emailGuardado
+                });
+                // El callback de initGis llamará consultarDatos nuevamente
+            } else {
+                toast('Sesión expirada. Vuelve a ingresar.', 'warning');
+                window.cerrarSesion();
+            }
             return;
         }
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);

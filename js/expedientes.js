@@ -122,8 +122,19 @@ window.nuevoExpediente = async function () {
         // 1. Guardar en Google Sheets (obligatorio — solo se llega aquí online + token)
         await guardarNuevoExpedienteRemoto(nuevaFila);
 
-        // 2. Recargar datos desde Sheets para obtener el ID real asignado
-        await consultarDatos();
+        // 2. Recargar datos desde Sheets para obtener el ID real asignado.
+        //    Verificar token antes de llamar — puede haber expirado durante el guardado.
+        if (App.accessToken && tokenVigente()) {
+            await consultarDatos();
+        } else {
+            // Token expirado: renovar silenciosamente.
+            // consultarDatos() se llamará desde el callback de initGis.
+            toast('Expediente guardado. Actualizando lista...', 'success', 3000);
+            if (App.tokenClient && navigator.onLine) {
+                const email = localStorage.getItem('userEmail') || '';
+                App.tokenClient.requestAccessToken({ prompt: '', login_hint: email });
+            }
+        }
 
         // 3. Cerrar modal y notificar
         window.cerrarFormularioNuevoExpediente();
