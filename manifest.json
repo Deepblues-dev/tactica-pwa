@@ -2,14 +2,14 @@
   "name": "Táctica Abogados",
   "short_name": "Táctica",
   "description": "Sistema de gestión de expedientes jurídicos",
-  "start_url": "/index.html",
-  "scope": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#06152C",
   "theme_color": "#06152C",
   "icons": [
-      {
+    {
       "src": "icon-180.png",
       "sizes": "180x180",
       "type": "image/png",
