@@ -237,3 +237,6 @@ window.iniciarLoginInteractivo = () => {
     };
     App.tokenClient.requestAccessToken({ prompt: 'select_account' });
 };
+
+// Puente de compatibilidad para arreglar el error del botón del HTML
+window.iniciarSesion = () => window.iniciarLoginInteractivo();
