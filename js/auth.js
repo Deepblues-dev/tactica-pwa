@@ -5,7 +5,11 @@
 
 // ── Helpers de sesión ────────────────────────────────────
 function tokenVigente() {
-    return !!(App.tokenExpira && Date.now() < App.tokenExpira);
+    return !!(
+        App.accessToken &&
+        App.tokenExpira &&
+        Date.now() < App.tokenExpira
+    );
 }
 
 function ultimaValidacionVigente() {
@@ -39,23 +43,48 @@ async function validarSesionPeriodicamente() {
     }
 }
 
-// ── Obtener y guardar email (login_hint para renovaciones) ─
-async function obtenerYGuardarEmail() {
-    if (!App.accessToken) return;
+// ── Obtener y guardar email (login_hint para renovaciones) ─async function obtenerYGuardarEmail() {
+
+    if (!tokenVigente()) return;
+
     if (localStorage.getItem('userEmail')) return;
 
     try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { 'Authorization': 'Bearer ' + App.accessToken }
-        });
-        if (!res.ok) return;
-        const info = await res.json();
-        if (info.email) {
-            localStorage.setItem('userEmail', info.email);
-            console.log('[Táctica] Email guardado para login_hint:', info.email);
+
+        const res = await fetch(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            {
+                headers: {
+                    'Authorization': 'Bearer ' + App.accessToken
+                }
+            }
+        );
+
+        if (res.status === 401) {
+
+            console.warn('[OAuth] Token inválido para userinfo.');
+
+            localStorage.removeItem('accessToken');
+
+            App.accessToken = null;
+
+            return;
         }
+
+        if (!res.ok) return;
+
+        const info = await res.json();
+
+        if (info.email) {
+
+            localStorage.setItem('userEmail', info.email);
+
+            console.log('[OAuth] Email guardado:', info.email);
+        }
+
     } catch (e) {
-        console.warn('[Táctica] No se pudo obtener email:', e);
+
+        console.warn('[OAuth] Error obteniendo email:', e);
     }
 }
 
@@ -80,8 +109,10 @@ window.initGis = async function () {
 
             if (tokenResponse && tokenResponse.access_token) {
 
-                App.accessToken = tokenResponse.access_token;
-                App.tokenExpira = Date.now() + (8 * 60 * 60 * 1000);
+               App.accessToken = tokenResponse.access_token;
+App.tokenExpira = Date.now() + ((tokenResponse.expires_in || 3600) * 1000);
+
+localStorage.setItem('accessToken', App.accessToken);
 
                 localStorage.setItem('ultimaValidacion', Date.now().toString());
                 localStorage.setItem('sesionActiva', '1');
@@ -109,7 +140,8 @@ window.initGis = async function () {
 
     // ── Auto-login en refresh ─────────────────────────────
     if (sesionLocalVigente()) {
-
+        
+        App.accessToken = localStorage.getItem('accessToken') || null;
         App.tokenExpira = parseInt(localStorage.getItem('tokenExpira') || '0');
 
         // Entrar inmediatamente con datos locales (sin esperar red ni token)
@@ -205,6 +237,7 @@ window.cerrarSesion = () => {
     localStorage.removeItem('ultimaValidacion');
     localStorage.removeItem('tokenExpira');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('accessToken');
 
     App.accessToken = null;
     App.tokenExpira = 0;
