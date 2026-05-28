@@ -1,3 +1,4 @@
+console.log('AUTH NUEVO CARGADO');
 // ════════════════════════════════════════════════════════════
 // auth.js — Autenticación OAuth, sesión local y renovación
 // Depende de: config.js
