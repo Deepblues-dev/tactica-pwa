@@ -152,6 +152,15 @@ async function obtenerYGuardarEmail() {
         const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { 'Authorization': `Bearer ${App.accessToken}` }
         });
+        
+        if (r.status === 401) {
+            console.warn('[Táctica Auth] El token guardado fue rechazado por Google (401). Limpiando...');
+            window.AuthManagerInstance.clearSessionLocal();
+            const splash = document.getElementById('splash-screen');
+            if (splash) splash.style.display = 'flex';
+            return;
+        }
+
         if (r.ok) {
             const data = await r.json();
             if (data.email) localStorage.setItem('userEmail', data.email);
@@ -200,31 +209,35 @@ window.cerrarSesion = () => {
 // Entrar a la app de forma segura
 async function entrarApp() {
     const splash = document.getElementById('splash-screen');
-    if (splash) splash.style.display = 'none';
     
-    document.getElementById('search-bar').style.display     = 'block';
-    document.getElementById('btn-logout-nav').style.display = 'flex';
-
-    if (typeof actualizarVisibilidadBtnNuevo === 'function') {
-        actualizarVisibilidadBtnNuevo();
-    }
-
     if (!navigator.onLine) {
+        if (splash) splash.style.display = 'none';
+        document.getElementById('search-bar').style.display     = 'block';
+        document.getElementById('btn-logout-nav').style.display = 'flex';
         if (typeof consultarDatos === 'function') await consultarDatos();
         return;
     }
 
     try {
+        // Forzar a verificar si el token actual realmente sirve
         await window.AuthManagerInstance.getValidToken();
-        obtenerYGuardarEmail();
+        
+        if (splash) splash.style.display = 'none';
+        document.getElementById('search-bar').style.display     = 'block';
+        document.getElementById('btn-logout-nav').style.display = 'flex';
+
+        if (typeof actualizarVisibilidadBtnNuevo === 'function') {
+            actualizarVisibilidadBtnNuevo();
+        }
+
+        await obtenerYGuardarEmail();
         if (typeof consultarDatos === 'function') await consultarDatos();
     } catch (e) {
-        console.error("Error al entrar a la app:", e);
-        // Si falla estando online, mostramos el splash para que vuelvan a iniciar sesión si es necesario
+        console.error("Error controlado al entrar a la app:", e);
+        window.AuthManagerInstance.clearSessionLocal();
         if (splash) splash.style.display = 'flex';
     }
 };
-
 window.iniciarLoginInteractivo = () => {
     if (!App.tokenClient) return;
     App.tokenClient.callback = (tokenResponse) => {
