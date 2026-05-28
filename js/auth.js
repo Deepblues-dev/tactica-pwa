@@ -43,7 +43,8 @@ async function validarSesionPeriodicamente() {
     }
 }
 
-// ── Obtener y guardar email (login_hint para renovaciones) ─async function obtenerYGuardarEmail() {
+// ── Obtener y guardar email (login_hint para renovaciones) ─
+async function obtenerYGuardarEmail() {
 
     if (!tokenVigente()) return;
 
