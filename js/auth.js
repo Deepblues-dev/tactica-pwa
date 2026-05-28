@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════════
-// auth.js — Autenticación OAuth, sesión local y renovación (ESTABLE)
+// auth.js — Autenticación OAuth, sesión local y renovación
 // Depende de: config.js
 // ════════════════════════════════════════════════════════════
 
-// ── Helpers de sesión corregidos ────────────────────────────
+// ── Helpers de sesión ────────────────────────────────────
 function tokenVigente() {
     return !!(App.tokenExpira && Date.now() < App.tokenExpira);
 }
@@ -15,109 +15,192 @@ function ultimaValidacionVigente() {
 }
 
 function sesionLocalVigente() {
-    return localStorage.getItem('sesionActiva') === '1';
+    return localStorage.getItem('sesionActiva') === '1' &&
+           ultimaValidacionVigente();
 }
 
-// ── Guardado y Persistencia Real (Mantiene el token vivo tras F5) ──
-function guardarSesionLocal(accessToken, expiresInSeconds) {
-    const durationMs = (parseInt(expiresInSeconds, 10) || 3600) * 1000;
-    App.accessToken = accessToken;
-    App.tokenExpira = Date.now() + durationMs;
-
-    localStorage.setItem('accessToken', accessToken); // Guardado físico
-    localStorage.setItem('tokenExpira', App.tokenExpira.toString());
-    localStorage.setItem('sesionActiva', '1');
-    localStorage.setItem('ultimaValidacion', Date.now().toString());
-    console.log(`[Táctica Auth] Token guardado con éxito. Expira: ${new Date(App.tokenExpira).toLocaleTimeString()}`);
-}
-
-// ── Validación periódica (sin pánico) ───────────────────────
+// ── Validación periódica (llamada cada 120 min) ───────────
 async function validarSesionPeriodicamente() {
-    if (!navigator.onLine) return;
+
+    if (!navigator.onLine) {
+        if (!ultimaValidacionVigente()) {
+            toast('La sesión debe validarse nuevamente.', 'warning', 6000);
+            window.cerrarSesion();
+        }
+        return;
+    }
+
     if (App.tokenClient && App.accessToken) {
         try {
-            // Intento silencioso
             App.tokenClient.requestAccessToken({ prompt: '' });
         } catch (e) {
-            console.error('Error en validación periódica:', e);
+            console.error('Error validando sesión:', e);
         }
     }
 }
 
-// ── Obtener y guardar email sin romper la sesión ──────────
+// ── Obtener y guardar email (login_hint para renovaciones) ─
 async function obtenerYGuardarEmail() {
     if (!App.accessToken) return;
-    try {
-        const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { 'Authorization': `Bearer ${App.accessToken}` }
-        });
-        
-        if (r.status === 401) {
-            console.warn('[Táctica Auth] Token no autorizado en userinfo (401). No limpiaremos la sesión para evitar bucles.');
-            return;
-        }
+    if (localStorage.getItem('userEmail')) return;
 
-        if (r.ok) {
-            const data = await r.json();
-            if (data.email) {
-                localStorage.setItem('userEmail', data.email);
-                console.log('[Táctica Auth] Correo del abogado guardado:', data.email);
-            }
+    try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { 'Authorization': 'Bearer ' + App.accessToken }
+        });
+        if (!res.ok) return;
+        const info = await res.json();
+        if (info.email) {
+            localStorage.setItem('userEmail', info.email);
+            console.log('[Táctica] Email guardado para login_hint:', info.email);
         }
     } catch (e) {
-        console.error('No se pudo obtener el email:', e);
+        console.warn('[Táctica] No se pudo obtener email:', e);
     }
 }
 
-// ── Inicialización de Google Identity Services (GIS) ───────
-window.initGis = async function() {
-    if (typeof google === 'undefined' || !google.accounts?.oauth2) return;
-
-    // Recuperar el token del almacenamiento físico inmediatamente al arrancar
-    const tokenGuardado = localStorage.getItem('accessToken');
-    const expiraGuardado = parseInt(localStorage.getItem('tokenExpira') || '0', 10);
-
-    if (tokenGuardado && expiraGuardado > Date.now()) {
-        App.accessToken = tokenGuardado;
-        App.tokenExpira = expiraGuardado;
-        console.log('[Táctica Auth] Token recuperado físicamente desde localStorage.');
+// ── Renovar token silenciosamente ─────────────────────────
+function renovarToken() {
+    if (App.tokenClient && navigator.onLine) {
+        App.tokenClient.requestAccessToken({ prompt: '' });
     }
+}
 
-    // Configurar el cliente de Google con un callback seguro
+// ── Inicializar Google Identity Services ─────────────────
+window.initGis = async function () {
+
+    await initDB();
+
     App.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+
+        client_id : CLIENT_ID,
+        scope     : 'https://www.googleapis.com/auth/spreadsheets',
+
         callback: (tokenResponse) => {
-            if (tokenResponse?.access_token) {
-                guardarSesionLocal(tokenResponse.access_token, tokenResponse.expires_in);
-                entrarApp();
-            } else {
-                console.error('[Táctica Auth] Respuesta de Google vacía o errónea.');
-                toast('Error de autenticación con Google', 'error');
+
+            if (tokenResponse && tokenResponse.access_token) {
+
+                App.accessToken = tokenResponse.access_token;
+                App.tokenExpira = Date.now() + (8 * 60 * 60 * 1000);
+
+                localStorage.setItem('ultimaValidacion', Date.now().toString());
+                localStorage.setItem('sesionActiva', '1');
+                localStorage.setItem('tokenExpira', App.tokenExpira.toString());
+
+                if (!App.timerRenovacion) {
+                    App.timerRenovacion = setInterval(
+                        validarSesionPeriodicamente,
+                        120 * 60 * 1000
+                    );
+                }
+
+                if (App._silenciosoTimeout) {
+                    clearTimeout(App._silenciosoTimeout);
+                    App._silenciosoTimeout = null;
+                }
+
+                if (!App._entrandoApp) {
+                    App._entrandoApp = true;
+                    entrarApp().finally(() => { App._entrandoApp = false; });
+                }
             }
         }
     });
 
-    const pantallaSplash = document.getElementById('splash-screen');
-    
-    // Si hay rastro de sesión activa, intentamos entrar directamente
+    // ── Auto-login en refresh ─────────────────────────────
     if (sesionLocalVigente()) {
-        await entrarApp();
-    } else {
-        if (pantallaSplash) pantallaSplash.style.display = 'flex';
-        document.getElementById('search-bar').style.display     = 'none';
-        document.getElementById('btn-logout-nav').style.display = 'none';
+
+        App.tokenExpira = parseInt(localStorage.getItem('tokenExpira') || '0');
+
+        // Entrar inmediatamente con datos locales (sin esperar red ni token)
+        if (!App._entrandoApp) {
+            App._entrandoApp = true;
+            entrarApp().finally(() => { App._entrandoApp = false; });
+        }
+
+        // Renovación silenciosa: solo si el token de memoria ya expiró
+        // y hay conexión disponible.
+        // IMPORTANTE: en Chrome Android, requestAccessToken fuera de un
+        // gesto de usuario puede mostrar el selector de cuenta aunque
+        // prompt='' si la cookie de Google expiró. Para evitarlo:
+        // - Solo se intenta si tokenExpira indica que el token SIGUE vigente
+        //   (significa que Google aún tiene la sesión activa en el dispositivo)
+        // - Si el token ya expiró, NO intentar silencioso automático en móvil;
+        //   esperar a que el usuario haga una acción (sincronizar, editar)
+        //   para disparar la renovación en contexto de gesto.
+        if (navigator.onLine && tokenVigente()) {
+
+            const emailGuardado = localStorage.getItem('userEmail') || '';
+
+            App._silenciosoTimeout = setTimeout(() => {
+                App._silenciosoTimeout = null;
+                console.warn('[Táctica] Token silencioso: timeout. Usando datos locales.');
+            }, 12000);
+
+            try {
+                App.tokenClient.requestAccessToken({
+                    prompt    : '',
+                    login_hint: emailGuardado
+                });
+            } catch (e) {
+                clearTimeout(App._silenciosoTimeout);
+                App._silenciosoTimeout = null;
+                console.warn('[Táctica] Token silencioso: error.', e);
+            }
+        }
+        // Si el token expiró: la app entra con datos locales (offline mode).
+        // El token se renovará la próxima vez que el usuario interactúe
+        // con una función que requiera red (editar, sincronizar).
     }
 };
 
-// ── Cierre de sesión limpio ────────────────────────────────
+// ── Login explícito (botón INGRESAR) ─────────────────────
+window.iniciarSesion = async () => {
+
+    const btn = document.getElementById('btn-login');
+    const textoOriginal = btn ? btn.textContent : '';
+
+    try {
+        // Si GIS aún no cargó, esperar hasta 15s con feedback visual
+        if (typeof google === 'undefined' || !google.accounts?.oauth2 || !App.tokenClient) {
+
+            if (btn) btn.textContent = 'Conectando...';
+
+            let intentos = 0;
+            while ((typeof google === 'undefined' || !google.accounts?.oauth2 || !App.tokenClient) && intentos < 30) {
+                await new Promise(r => setTimeout(r, 500));
+                intentos++;
+            }
+
+            if (typeof google === 'undefined' || !App.tokenClient) {
+                toast('Sin conexión al servicio de Google. Verifica tu internet.', 'error', 6000);
+                if (btn) btn.textContent = textoOriginal;
+                return;
+            }
+        }
+
+        App.tokenClient.requestAccessToken({ prompt: 'select_account' });
+
+    } catch (e) {
+        console.error('Error en iniciarSesion:', e);
+        toast('No se pudo iniciar sesión.', 'error', 6000);
+    } finally {
+        if (btn) btn.textContent = textoOriginal;
+    }
+};
+
+// ── Cerrar sesión ────────────────────────────────────────
 window.cerrarSesion = () => {
-    const token = App.accessToken || localStorage.getItem('accessToken');
-    if (token && typeof google !== 'undefined' && google.accounts?.oauth2) {
-        try { google.accounts.oauth2.revoke(token, () => {}); } catch(e){}
+
+    if (App.accessToken && typeof google !== 'undefined' && google.accounts?.oauth2) {
+        google.accounts.oauth2.revoke(App.accessToken, () => {});
     }
 
-    localStorage.removeItem('accessToken');
+    if (App.timerRenovacion) {
+        clearInterval(App.timerRenovacion);
+        App.timerRenovacion = null;
+    }
+
     localStorage.removeItem('sesionActiva');
     localStorage.removeItem('ultimaValidacion');
     localStorage.removeItem('tokenExpira');
@@ -125,65 +208,40 @@ window.cerrarSesion = () => {
 
     App.accessToken = null;
     App.tokenExpira = 0;
+    App.tokenClient = null;
 
     location.reload();
 };
 
-// ── Entrar a la app (post-login o refresh) ─────────────────
+// ── Entrar a la app (post-login o refresh) ───────────────
 async function entrarApp() {
-    const splash = document.getElementById('splash-screen');
-    
-    // Forzar apertura de la base de datos local si no se ha abierto
-    if (typeof initDB === 'function' && typeof db === 'undefined') {
-        try { await initDB(); } catch(e) { console.error(e); }
-    }
 
-    // Si está offline, entra con lo que tenga en IndexedDB
+    document.getElementById('splash-screen').style.display  = 'none';
+    document.getElementById('search-bar').style.display     = 'block';
+    document.getElementById('btn-logout-nav').style.display = 'flex';
+
+    // Controlar visibilidad del botón Nuevo Expediente
+    actualizarVisibilidadBtnNuevo();
+
     if (!navigator.onLine) {
-        if (splash) splash.style.display = 'none';
-        document.getElementById('search-bar').style.display     = 'block';
-        document.getElementById('btn-logout-nav').style.display = 'flex';
-        if (typeof consultarDatos === 'function') await consultarDatos();
+        await consultarDatos();
         return;
     }
 
-    // Si ya tenemos el token cargado en memoria RAM o local, pasamos directo sin molestar a Google
-    if (App.accessToken && tokenVigente()) {
-        if (splash) splash.style.display = 'none';
-        document.getElementById('search-bar').style.display     = 'block';
-        document.getElementById('btn-logout-nav').style.display = 'flex';
-        
-        if (typeof actualizarVisibilidadBtnNuevo === 'function') {
-            actualizarVisibilidadBtnNuevo();
-        }
-        
-        await obtenerYGuardarEmail();
-        if (typeof consultarDatos === 'function') await consultarDatos();
+    if (App.accessToken) {
+        obtenerYGuardarEmail();
+        await consultarDatos();
         return;
     }
 
-    // Si la sesión dice estar activa pero el token caducó, intentamos renovación silenciosa
-    if (sesionLocalVigente() && App.tokenClient) {
+    if (tokenVigente() && App.tokenClient) {
         try {
-            console.log('[Táctica Auth] Token caducado. Intentando renovación automática...');
             App.tokenClient.requestAccessToken({ prompt: '' });
+            return;
         } catch (e) {
-            console.warn('[Táctica Auth] Falló renovación silenciosa. Esperando clic del usuario.');
-            if (splash) splash.style.display = 'flex';
+            console.error('No se pudo renovar el token:', e);
         }
-    } else {
-        if (splash) splash.style.display = 'flex';
     }
+
+    await consultarDatos();
 }
-
-// Botón manual de inicio de sesión
-window.iniciarLoginInteractivo = () => {
-    if (!App.tokenClient) {
-        toast('El sistema de Google no está listo. Reintenta en un momento.', 'warning');
-        return;
-    }
-    App.tokenClient.requestAccessToken({ prompt: 'select_account' });
-};
-
-// Puentes de compatibilidad absolutos
-window.iniciarSesion = () => window.iniciarLoginInteractivo();

@@ -218,11 +218,15 @@ window.guardarCambios = async function () {
     btnSpinner.style.display = 'inline-block';
 
     try {
-        // Validación de sesión
-        if (navigator.onLine && !App.accessToken) {
-            toast('Sesión expirada.', 'warning');
-            restaurarBoton();
-            return;
+        // Validación de sesión — renovar si expiró (dentro del gesto del usuario)
+        if (navigator.onLine && (!App.accessToken || !tokenVigente())) {
+            toast('Renovando sesión...', 'warning', 3000);
+            const ok = await asegurarToken();
+            if (!ok) {
+                toast('Sesión expirada. Vuelve a ingresar.', 'warning');
+                restaurarBoton();
+                return;
+            }
         }
 
         const rowIndex     = document.getElementById('edit-row-index').value;
