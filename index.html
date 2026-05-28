@@ -786,20 +786,33 @@
 <!-- Inicialización — espera a que GIS esté listo -->
 <script>
 window.addEventListener('load', async () => {
-    // Esperar hasta que google.accounts esté disponible (máx 10s)
+    // 1. Forzar primero la carga y apertura de IndexedDB si existe en db.js
+    if (typeof initDB === 'function') {
+        try {
+            await initDB();
+            console.log('[Táctica] Conexión con IndexedDB establecida con éxito en el arranque.');
+        } catch (dbError) {
+            console.error('[Táctica] Error fatal al conectar con IndexedDB:', dbError);
+        }
+    }
+
+    // 2. Esperar pacientemente a que Google Identity Services esté montado en memoria
     let intentos = 0;
     while (typeof google === 'undefined' || !google.accounts?.oauth2) {
         if (intentos++ > 100) {
-            console.error('[Táctica] Google Identity Services no cargó.');
+            console.error('[Táctica] El cliente de Google Identity Services no respondió.');
             break;
         }
         await new Promise(r => setTimeout(r, 100));
     }
+
+    // 3. Ya con DB abierta y Google cargado, iniciamos el flujo seguro de GIS
     if (typeof window.initGis === 'function') {
         await window.initGis();
     }
 });
 </script>
+
 
 <!-- Service Worker -->
 <script>
