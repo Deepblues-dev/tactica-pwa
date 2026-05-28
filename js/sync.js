@@ -1,27 +1,21 @@
 // ════════════════════════════════════════════════════════════
-// sync.js — Consulta de datos, sincronización y logs (CORREGIDO)
+// sync.js — Consulta de datos, sincronización y logs (ESTABLE)
 // Depende de: config.js, auth.js, db.js
 // ════════════════════════════════════════════════════════════
 
-// Asegura el token delegando de manera segura en el AuthManagerInstance
 async function asegurarToken() {
-    try {
-        const token = await window.AuthManagerInstance.getValidToken();
-        return !!token;
-    } catch (e) {
-        console.warn("[Sync] No se pudo asegurar el token:", e.message);
-        return false;
-    }
+    if (App.accessToken && tokenVigente()) return true;
+    return false; // Delegamos la renovación al flujo principal
 }
 
-// Consulta estructurada de expedientes a Google Sheets
 async function consultarDatos() {
     if (App._entrandoApp) return;
     App._entrandoApp = true;
 
     try {
+        // Modo Offline
         if (!navigator.onLine) {
-            console.log('[Sync] Modo Offline: Cargando desde IndexedDB local...');
+            console.log('[Sync] Cargando desde copia local IndexedDB...');
             const locales = await obtenerExpedientesLocales();
             App.rawData = locales;
             App.filtrados = [...App.rawData];
@@ -29,12 +23,9 @@ async function consultarDatos() {
             return;
         }
 
-        // Obtener el token validado por el Mutex
-        let token;
-        try {
-            token = await window.AuthManagerInstance.getValidToken();
-        } catch(err) {
-            console.log('[Sync] Redirigiendo a carga local por falta de credenciales online.');
+        const token = App.accessToken || localStorage.getItem('accessToken');
+        if (!token) {
+            console.warn('[Sync] No hay token disponible para consultar Google Sheets online.');
             const locales = await obtenerExpedientesLocales();
             App.rawData = locales;
             App.filtrados = [...App.rawData];
@@ -42,7 +33,7 @@ async function consultarDatos() {
             return;
         }
 
-        toast('Sincronizando con Google Sheets...', 'success', 2000);
+        toast('Sincronizando expedientes...', 'success', 2000);
 
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A2:Y`;
         const response = await fetch(url, {
@@ -50,12 +41,15 @@ async function consultarDatos() {
         });
 
         if (response.status === 401) {
-            window.AuthManagerInstance.clearSessionLocal();
-            toast('Sesión expirada. Por favor vuelve a iniciar sesión.', 'warning');
+            console.warn("[Sync] El servidor rechazó el token. Cargando datos locales.");
+            const locales = await obtenerExpedientesLocales();
+            App.rawData = locales;
+            App.filtrados = [...App.rawData];
+            if (typeof renderCards === 'function') renderCards(App.filtrados);
             return;
         }
 
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
         const data = await response.json();
         const filas = data.values || [];
@@ -65,11 +59,11 @@ async function consultarDatos() {
             COLUMNAS.forEach((col, idx) => {
                 obj[col] = fila[idx] || '';
             });
-            obj.id = obj.id || (index + 2).toString(); // ID o Fila
+            obj.id = obj.id || (index + 2).toString();
             return obj;
         });
 
-        // USANDO TU FUNCIÓN REAL DE DB.JS:
+        // Guardar en la IndexedDB local usando tu función real de db.js
         if (typeof actualizarTodosLosExpedientes === 'function') {
             await actualizarTodosLosExpedientes(expedientesMapeados);
         }
@@ -79,28 +73,29 @@ async function consultarDatos() {
         
         if (typeof renderCards === 'function') renderCards(App.filtrados);
 
-        // Intentar procesar cambios pendientes en cola offline
-        sincronizarPendientes();
+        // Procesar cola offline si está inicializada
+        if (typeof db !== 'undefined') {
+            sincronizarPendientes();
+        }
 
     } catch (e) {
-        console.error('[Sync] Error al consultar datos:', e);
-        toast('Cargando datos locales (Sin conexión)...', 'warning');
+        console.error('[Sync] Error al consultar datos de Sheets:', e);
         const locales = await obtenerExpedientesLocales();
         App.rawData = locales;
         App.filtrados = [...App.rawData];
         if (typeof renderCards === 'function') renderCards(App.filtrados);
     } finally {
-        App._entrandoApp = false; // <-- Arreglado el error App.App
+        App._entrandoApp = false;
     }
 }
 
-// Subir bitácora de auditoría legal limpia
 async function subirLogSheets(log) {
     if (!navigator.onLine) return;
     try {
-        const token = await window.AuthManagerInstance.getValidToken();
+        const token = App.accessToken || localStorage.getItem('accessToken');
+        if (!token) return;
+
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:K:append?valueInputOption=USER_ENTERED`;
-        
         const cuerpo = {
             values: [[
                 log.logId || ('log_' + Date.now()),
@@ -126,21 +121,21 @@ async function subirLogSheets(log) {
             body: JSON.stringify(cuerpo)
         });
     } catch (e) {
-        console.error('[Sync Log] No se pudo subir el log a Sheets:', e);
+        console.error('[Sync Log] No se pudo subir el log:', e);
     }
 }
 
-// Sincronizar cola de pendientes offline de forma segura
 let sincronizando = false;
 async function sincronizarPendientes() {
-    if (sincronizando || !navigator.onLine) return;
+    if (sincronizando || !navigator.onLine || typeof db === 'undefined') return;
     sincronizando = true;
 
     try {
         const cola = await obtenerQueuePendiente();
         if (!cola.length) return;
 
-        const token = await window.AuthManagerInstance.getValidToken();
+        const token = App.accessToken || localStorage.getItem('accessToken');
+        if (!token) return;
 
         for (const item of cola) {
             try {
@@ -163,16 +158,17 @@ async function sincronizarPendientes() {
                 }
                 await eliminarQueueItem(item.queueId);
             } catch (e) {
-                console.error('[Sync Pendientes] Error en item:', e);
+                console.error('[Sync Pendientes] Error en fila:', e);
             }
         }
         toast('Sincronización en segundo plano completada.', 'success');
+    } catch(err) {
+        console.error(err);
     } finally {
         sincronizando = false;
     }
 }
 
-// Listeners automáticos de red
 window.addEventListener('online', () => {
     toast('Conexión de red restaurada', 'success');
     sincronizarPendientes();
