@@ -3,6 +3,56 @@
 // Depende de: config.js, auth.js, db.js
 // ════════════════════════════════════════════════════════════
 
+// ── Renovación lazy de token (dentro de gesto de usuario) ─
+// Usar antes de cualquier operación online que requiera token.
+// Devuelve true si hay token válido al terminar, false si no.
+async function asegurarToken() {
+
+    if (App.accessToken && tokenVigente()) return true;
+    if (!navigator.onLine || !App.tokenClient) return false;
+
+    const emailGuardado = localStorage.getItem('userEmail') || '';
+
+    return new Promise(resolve => {
+
+        const timeoutId = setTimeout(() => {
+            resolve(false);
+        }, 12000);
+
+        const callbackOriginal = App.tokenClient.callback;
+
+        App.tokenClient.callback = (tokenResponse) => {
+
+            clearTimeout(timeoutId);
+            App.tokenClient.callback = callbackOriginal;
+
+            if (tokenResponse?.access_token) {
+                App.accessToken = tokenResponse.access_token;
+                App.tokenExpira = Date.now() + (8 * 60 * 60 * 1000);
+                localStorage.setItem('tokenExpira', App.tokenExpira.toString());
+                localStorage.setItem('ultimaValidacion', Date.now().toString());
+                localStorage.setItem('sesionActiva', '1');
+                // También ejecutar callback original para actualizar UI
+                callbackOriginal?.(tokenResponse);
+                resolve(true);
+            } else {
+                resolve(false);
+            }
+        };
+
+        try {
+            App.tokenClient.requestAccessToken({
+                prompt    : '',
+                login_hint: emailGuardado
+            });
+        } catch (e) {
+            clearTimeout(timeoutId);
+            App.tokenClient.callback = callbackOriginal;
+            resolve(false);
+        }
+    });
+}
+
 // ── Consultar datos (Sheets o IndexedDB) ─────────────────
 async function consultarDatos() {
 
@@ -176,31 +226,11 @@ async function sincronizarPendientes() {
     if (sincronizando)        return;
     if (!navigator.onLine)    return;
 
-    if (!App.accessToken) {
-        if (!ultimaValidacionVigente()) {
-            toast('La sesión expiró. Inicia sesión para sincronizar.', 'warning', 6000);
-            return;
-        }
-        try {
-            await new Promise((resolve, reject) => {
-                const callbackOriginal = App.tokenClient.callback;
-                App.tokenClient.callback = (tokenResponse) => {
-                    App.tokenClient.callback = callbackOriginal;
-                    if (tokenResponse?.access_token) {
-                        App.accessToken = tokenResponse.access_token;
-                        App.tokenExpira = Date.now() + (8 * 60 * 60 * 1000);
-                        localStorage.setItem('tokenExpira', App.tokenExpira.toString());
-                        localStorage.setItem('ultimaValidacion', Date.now().toString());
-                        resolve();
-                    } else {
-                        reject(new Error('No se obtuvo token'));
-                    }
-                };
-                App.tokenClient.requestAccessToken({ prompt: '' });
-            });
-        } catch (e) {
-            console.error('No fue posible renovar el token:', e);
-            toast('No fue posible sincronizar. Inicia sesión nuevamente.', 'warning', 6000);
+    if (!App.accessToken || !tokenVigente()) {
+        toast('Renovando sesión para sincronizar...', 'warning', 3000);
+        const ok = await asegurarToken();
+        if (!ok) {
+            toast('No fue posible sincronizar. Verifica tu conexión e intenta de nuevo.', 'warning', 6000);
             return;
         }
     }

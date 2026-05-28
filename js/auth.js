@@ -112,12 +112,24 @@ window.initGis = async function () {
 
         App.tokenExpira = parseInt(localStorage.getItem('tokenExpira') || '0');
 
+        // Entrar inmediatamente con datos locales (sin esperar red ni token)
         if (!App._entrandoApp) {
             App._entrandoApp = true;
             entrarApp().finally(() => { App._entrandoApp = false; });
         }
 
-        if (navigator.onLine) {
+        // Renovación silenciosa: solo si el token de memoria ya expiró
+        // y hay conexión disponible.
+        // IMPORTANTE: en Chrome Android, requestAccessToken fuera de un
+        // gesto de usuario puede mostrar el selector de cuenta aunque
+        // prompt='' si la cookie de Google expiró. Para evitarlo:
+        // - Solo se intenta si tokenExpira indica que el token SIGUE vigente
+        //   (significa que Google aún tiene la sesión activa en el dispositivo)
+        // - Si el token ya expiró, NO intentar silencioso automático en móvil;
+        //   esperar a que el usuario haga una acción (sincronizar, editar)
+        //   para disparar la renovación en contexto de gesto.
+        if (navigator.onLine && tokenVigente()) {
+
             const emailGuardado = localStorage.getItem('userEmail') || '';
 
             App._silenciosoTimeout = setTimeout(() => {
@@ -136,24 +148,44 @@ window.initGis = async function () {
                 console.warn('[Táctica] Token silencioso: error.', e);
             }
         }
+        // Si el token expiró: la app entra con datos locales (offline mode).
+        // El token se renovará la próxima vez que el usuario interactúe
+        // con una función que requiera red (editar, sincronizar).
     }
 };
 
 // ── Login explícito (botón INGRESAR) ─────────────────────
 window.iniciarSesion = async () => {
+
+    const btn = document.getElementById('btn-login');
+    const textoOriginal = btn ? btn.textContent : '';
+
     try {
-        if (typeof google === 'undefined' || !google.accounts?.oauth2) {
-            toast('Cargando servicio de autenticación. Intenta en unos segundos.', 'warning', 5000);
-            return;
+        // Si GIS aún no cargó, esperar hasta 15s con feedback visual
+        if (typeof google === 'undefined' || !google.accounts?.oauth2 || !App.tokenClient) {
+
+            if (btn) btn.textContent = 'Conectando...';
+
+            let intentos = 0;
+            while ((typeof google === 'undefined' || !google.accounts?.oauth2 || !App.tokenClient) && intentos < 30) {
+                await new Promise(r => setTimeout(r, 500));
+                intentos++;
+            }
+
+            if (typeof google === 'undefined' || !App.tokenClient) {
+                toast('Sin conexión al servicio de Google. Verifica tu internet.', 'error', 6000);
+                if (btn) btn.textContent = textoOriginal;
+                return;
+            }
         }
-        if (!App.tokenClient) {
-            toast('No se pudo inicializar el inicio de sesión.', 'error', 6000);
-            return;
-        }
+
         App.tokenClient.requestAccessToken({ prompt: 'select_account' });
+
     } catch (e) {
         console.error('Error en iniciarSesion:', e);
         toast('No se pudo iniciar sesión.', 'error', 6000);
+    } finally {
+        if (btn) btn.textContent = textoOriginal;
     }
 };
 
