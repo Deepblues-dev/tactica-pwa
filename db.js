@@ -202,12 +202,27 @@ async function cargarExpedientesLocal() {
 // ═══════════════════════════════════════
 // ACTUALIZAR EXPEDIENTE LOCAL
 // ═══════════════════════════════════════
+
 async function actualizarExpedienteLocal(
     id,
     filaNueva
 ) {
 
     return new Promise((resolve, reject) => {
+
+        // ── Validar ID ─────────────────────────────
+        if (
+            id === undefined ||
+            id === null ||
+            id === ''
+        ) {
+
+            console.warn(
+                '[IndexedDB] ID inválido. Generando temporal.'
+            );
+
+            id = crypto.randomUUID();
+        }
 
         const tx = db.transaction(
             'expedientes',
@@ -219,7 +234,7 @@ async function actualizarExpedienteLocal(
 
         const request = store.put({
 
-            id,
+            id: String(id),
 
             fila:
                 filaNueva
@@ -227,7 +242,15 @@ async function actualizarExpedienteLocal(
 
         request.onsuccess = () => resolve();
 
-        request.onerror = reject;
+        request.onerror = (e) => {
+
+            console.error(
+                '[IndexedDB] Error en put():',
+                e
+            );
+
+            reject(e);
+        };
     });
 }
 
