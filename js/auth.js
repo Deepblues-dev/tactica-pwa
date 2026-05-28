@@ -1,255 +1,183 @@
 // ════════════════════════════════════════════════════════════
-// auth.js — Autenticación OAuth, sesión local y renovación (REFACTORIZADO)
-// Depende de: config.js
+// sync.js — Consulta de datos, sincronización y logs (CORREGIDO)
+// Depende de: config.js, auth.js, db.js
 // ════════════════════════════════════════════════════════════
 
-class AuthManager {
-    constructor() {
-        this.STORAGE_KEY = 'tactica_auth_session';
-        this._isRefreshing = false;
-        this._refreshSubscribers = [];
-        this._restoreSession();
-    }
-
-    // Restaura el token del almacenamiento al reiniciar la app
-    _restoreSession() {
-        try {
-            const stored = localStorage.getItem(this.STORAGE_KEY);
-            if (stored) {
-                const session = JSON.parse(stored);
-                // Si el token aún es válido en tiempo real, lo montamos en memoria
-                if (session.tokenExpira && Date.now() < session.tokenExpira) {
-                    App.accessToken = session.accessToken;
-                    App.tokenExpira = session.tokenExpira;
-                    console.log('[Táctica Auth] Sesión válida restaurada desde almacenamiento.');
-                } else {
-                    this.clearSessionLocal();
-                }
-            }
-        } catch (e) {
-            console.error('[Táctica Auth] Error al restaurar sesión:', e);
-            this.clearSessionLocal();
-        }
-    }
-
-    // Guarda el token físicamente en el navegador
-    saveSession(accessToken, expiresInSeconds) {
-        // Si Google no da tiempo, usamos 1 hora por defecto (3600s)
-        const durationMs = (parseInt(expiresInSeconds, 10) || 3600) * 1000;
-        App.accessToken = accessToken;
-        App.tokenExpira = Date.now() + durationMs;
-
-        const sessionData = {
-            accessToken: App.accessToken,
-            tokenExpira: App.tokenExpira
-        };
-
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(sessionData));
-        localStorage.setItem('tokenExpira', App.tokenExpira.toString());
-        localStorage.setItem('sesionActiva', '1');
-        localStorage.setItem('ultimaValidacion', Date.now().toString());
-        console.log(`[Táctica Auth] Token guardado. Expira en: ${new Date(App.tokenExpira).toLocaleTimeString()}`);
-    }
-
-    clearSessionLocal() {
-        App.accessToken = null;
-        App.tokenExpira = 0;
-        localStorage.removeItem(this.STORAGE_KEY);
-        localStorage.removeItem('sesionActiva');
-        localStorage.removeItem('ultimaValidacion');
-        localStorage.removeItem('tokenExpira');
-        localStorage.removeItem('userEmail');
-    }
-
-    // Bloqueo Mutex para evitar que múltiples peticiones pidan un token al mismo tiempo
-    async getValidToken() {
-        if (App.accessToken && Date.now() < App.tokenExpira) {
-            return App.accessToken;
-        }
-
-        if (!navigator.onLine || !App.tokenClient) {
-            throw new Error("OFFLINE_OR_NO_CLIENT");
-        }
-
-        if (this._isRefreshing) {
-            return new Promise((resolve, reject) => {
-                this._refreshSubscribers.push({ resolve, reject });
-            });
-        }
-
-        this._isRefreshing = true;
-        console.log('[Táctica Auth] Token expirado o ausente. Solicitando renovación silenciosa...');
-
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                this._isRefreshing = false;
-                reject(new Error("Timeout esperando respuesta de Google"));
-            }, 10000);
-
-            App.tokenClient.callback = (tokenResponse) => {
-                clearTimeout(timeoutId);
-                this._isRefreshing = false;
-
-                if (tokenResponse?.access_token) {
-                    this.saveSession(tokenResponse.access_token, tokenResponse.expires_in);
-                    
-                    // Resolver la petición actual y todas las que estaban formadas
-                    resolve(tokenResponse.access_token);
-                    this._refreshSubscribers.forEach(sub => sub.resolve(tokenResponse.access_token));
-                    this._refreshSubscribers = [];
-                } else {
-                    this.clearSessionLocal();
-                    const err = new Error("Google denegó el token");
-                    reject(err);
-                    this._refreshSubscribers.forEach(sub => sub.reject(err));
-                    this._refreshSubscribers = [];
-                }
-            };
-
-            try {
-                // Solicitar token de forma silenciosa sin interrumpir al abogado
-                App.tokenClient.requestAccessToken({ prompt: '' });
-            } catch (e) {
-                this._isRefreshing = false;
-                reject(e);
-            }
-        });
-    }
-}
-
-// Inicializar el gestor globalmente
-window.AuthManagerInstance = new AuthManager();
-
-// ── Helpers de compatibilidad con tu código actual ────────────────
-function tokenVigente() {
-    return !!(App.tokenExpira && Date.now() < App.tokenExpira);
-}
-
-function ultimaValidacionVigente() {
-    const ultima = parseInt(localStorage.getItem('ultimaValidacion') || '0', 10);
-    if (!ultima) return false;
-    return (Date.now() - ultima) < (4 * 60 * 60 * 1000); // 4 horas
-}
-
-function sesionLocalVigente() {
-    return localStorage.getItem('sesionActiva') === '1' && (App.accessToken || tokenVigente());
-}
-
-// Validación periódica sin loops infinitos
-async function validarSesionPeriodicamente() {
-    if (!navigator.onLine) return;
+// Asegura el token delegando de manera segura en el AuthManagerInstance
+async function asegurarToken() {
     try {
-        await window.AuthManagerInstance.getValidToken();
+        const token = await window.AuthManagerInstance.getValidToken();
+        return !!token;
     } catch (e) {
-        console.error('Error en validación periódica:', e);
+        console.warn("[Sync] No se pudo asegurar el token:", e.message);
+        return false;
     }
 }
 
-// Obtener email del usuario logueado
-async function obtenerYGuardarEmail() {
-    if (!App.accessToken) return;
+// Consulta estructurada de expedientes a Google Sheets
+async function consultarDatos() {
+    if (App._entrandoApp) return;
+    App._entrandoApp = true;
+
     try {
-        const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { 'Authorization': `Bearer ${App.accessToken}` }
-        });
-        
-        if (r.status === 401) {
-            console.warn('[Táctica Auth] El token guardado fue rechazado por Google (401). Limpiando...');
-            window.AuthManagerInstance.clearSessionLocal();
-            const splash = document.getElementById('splash-screen');
-            if (splash) splash.style.display = 'flex';
+        if (!navigator.onLine) {
+            console.log('[Sync] Modo Offline: Cargando desde IndexedDB local...');
+            const locales = await obtenerExpedientesLocales();
+            App.rawData = locales;
+            App.filtrados = [...App.rawData];
+            if (typeof renderCards === 'function') renderCards(App.filtrados);
             return;
         }
 
-        if (r.ok) {
-            const data = await r.json();
-            if (data.email) localStorage.setItem('userEmail', data.email);
+        // Obtener el token validado por el Mutex
+        let token;
+        try {
+            token = await window.AuthManagerInstance.getValidToken();
+        } catch(err) {
+            console.log('[Sync] Redirigiendo a carga local por falta de credenciales online.');
+            const locales = await obtenerExpedientesLocales();
+            App.rawData = locales;
+            App.filtrados = [...App.rawData];
+            if (typeof renderCards === 'function') renderCards(App.filtrados);
+            return;
         }
+
+        toast('Sincronizando con Google Sheets...', 'success', 2000);
+
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A2:Y`;
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.status === 401) {
+            window.AuthManagerInstance.clearSessionLocal();
+            toast('Sesión expirada. Por favor vuelve a iniciar sesión.', 'warning');
+            return;
+        }
+
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+
+        const data = await response.json();
+        const filas = data.values || [];
+
+        const expedientesMapeados = filas.map((fila, index) => {
+            const obj = {};
+            COLUMNAS.forEach((col, idx) => {
+                obj[col] = fila[idx] || '';
+            });
+            obj.id = obj.id || (index + 2).toString(); // ID o Fila
+            return obj;
+        });
+
+        // USANDO TU FUNCIÓN REAL DE DB.JS:
+        if (typeof actualizarTodosLosExpedientes === 'function') {
+            await actualizarTodosLosExpedientes(expedientesMapeados);
+        }
+
+        App.rawData = expedientesMapeados;
+        App.filtrados = [...App.rawData];
+        
+        if (typeof renderCards === 'function') renderCards(App.filtrados);
+
+        // Intentar procesar cambios pendientes en cola offline
+        sincronizarPendientes();
+
     } catch (e) {
-        console.error('No se pudo obtener el email:', e);
+        console.error('[Sync] Error al consultar datos:', e);
+        toast('Cargando datos locales (Sin conexión)...', 'warning');
+        const locales = await obtenerExpedientesLocales();
+        App.rawData = locales;
+        App.filtrados = [...App.rawData];
+        if (typeof renderCards === 'function') renderCards(App.filtrados);
+    } finally {
+        App._entrandoApp = false; // <-- Arreglado el error App.App
     }
 }
 
-// Inicialización de Google Identity Services adaptado
-window.initGis = async function() {
-    if (typeof google === 'undefined' || !google.accounts?.oauth2) return;
+// Subir bitácora de auditoría legal limpia
+async function subirLogSheets(log) {
+    if (!navigator.onLine) return;
+    try {
+        const token = await window.AuthManagerInstance.getValidToken();
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:K:append?valueInputOption=USER_ENTERED`;
+        
+        const cuerpo = {
+            values: [[
+                log.logId || ('log_' + Date.now()),
+                log.timestampUtc || new Date().toISOString(),
+                localStorage.getItem('userEmail') || 'usuario_pwa',
+                DEVICE_ID,
+                log.expedienteId || '',
+                log.actionType || 'UPDATE',
+                JSON.stringify(log.changedFields || []),
+                JSON.stringify(log.oldValues || {}),
+                JSON.stringify(log.newValues || {}),
+                'SYNCED',
+                log.hash || ''
+            ]]
+        };
 
-    App.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-        callback: '' // Se sobreescribe dinámicamente en el Mutex
-    });
+        await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(cuerpo)
+        });
+    } catch (e) {
+        console.error('[Sync Log] No se pudo subir el log a Sheets:', e);
+    }
+}
 
-    const pantallaSplash = document.getElementById('splash-screen');
-    
-    if (sesionLocalVigente()) {
-        await entrarApp();
-    } else {
-        if (pantallaSplash) pantallaSplash.style.display = 'flex';
-        document.getElementById('search-bar').style.display     = 'none';
-        document.getElementById('btn-logout-nav').style.display = 'none';
-    }
-};
-
-// Cierre de sesión limpio
-window.cerrarSesion = () => {
-    if (App.accessToken && typeof google !== 'undefined' && google.accounts?.oauth2) {
-        try {
-            google.accounts.oauth2.revoke(App.accessToken, () => {});
-        } catch(e){}
-    }
-    if (App.timerRenovacion) {
-        clearInterval(App.timerRenovacion);
-        App.timerRenovacion = null;
-    }
-    window.AuthManagerInstance.clearSessionLocal();
-    location.reload();
-};
-
-// Entrar a la app de forma segura
-async function entrarApp() {
-    const splash = document.getElementById('splash-screen');
-    
-    if (!navigator.onLine) {
-        if (splash) splash.style.display = 'none';
-        document.getElementById('search-bar').style.display     = 'block';
-        document.getElementById('btn-logout-nav').style.display = 'flex';
-        if (typeof consultarDatos === 'function') await consultarDatos();
-        return;
-    }
+// Sincronizar cola de pendientes offline de forma segura
+let sincronizando = false;
+async function sincronizarPendientes() {
+    if (sincronizando || !navigator.onLine) return;
+    sincronizando = true;
 
     try {
-        // Forzar a verificar si el token actual realmente sirve
-        await window.AuthManagerInstance.getValidToken();
-        
-        if (splash) splash.style.display = 'none';
-        document.getElementById('search-bar').style.display     = 'block';
-        document.getElementById('btn-logout-nav').style.display = 'flex';
+        const cola = await obtenerQueuePendiente();
+        if (!cola.length) return;
 
-        if (typeof actualizarVisibilidadBtnNuevo === 'function') {
-            actualizarVisibilidadBtnNuevo();
+        const token = await window.AuthManagerInstance.getValidToken();
+
+        for (const item of cola) {
+            try {
+                if (item.type === 'UPDATE_ROW') {
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${item.col}${item.rowIndex}?valueInputOption=USER_ENTERED`;
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ values: [[item.value]] })
+                    });
+
+                    if (response.status === 429) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        continue;
+                    }
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                }
+                await eliminarQueueItem(item.queueId);
+            } catch (e) {
+                console.error('[Sync Pendientes] Error en item:', e);
+            }
         }
-
-        await obtenerYGuardarEmail();
-        if (typeof consultarDatos === 'function') await consultarDatos();
-    } catch (e) {
-        console.error("Error controlado al entrar a la app:", e);
-        window.AuthManagerInstance.clearSessionLocal();
-        if (splash) splash.style.display = 'flex';
+        toast('Sincronización en segundo plano completada.', 'success');
+    } finally {
+        sincronizando = false;
     }
-};
-window.iniciarLoginInteractivo = () => {
-    if (!App.tokenClient) return;
-    App.tokenClient.callback = (tokenResponse) => {
-        if (tokenResponse?.access_token) {
-            window.AuthManagerInstance.saveSession(tokenResponse.access_token, tokenResponse.expires_in);
-            entrarApp();
-        } else {
-            toast('Error de autenticación con Google', 'error');
-        }
-    };
-    App.tokenClient.requestAccessToken({ prompt: 'select_account' });
-};
+}
 
-// Puente de compatibilidad para arreglar el error del botón del HTML
-window.iniciarSesion = () => window.iniciarLoginInteractivo();
+// Listeners automáticos de red
+window.addEventListener('online', () => {
+    toast('Conexión de red restaurada', 'success');
+    sincronizarPendientes();
+});
+
+window.addEventListener('offline', () => {
+    toast('Trabajando en modo local (Sin Internet)', 'warning', 5000);
+});
