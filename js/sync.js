@@ -1,322 +1,183 @@
 // ════════════════════════════════════════════════════════════
-// sync.js — Consulta de datos, sincronización y logs
+// sync.js — Consulta de datos, sincronización y logs (REFACTORIZADO)
 // Depende de: config.js, auth.js, db.js
 // ════════════════════════════════════════════════════════════
 
-// ── Renovación lazy de token (dentro de gesto de usuario) ─
-// Usar antes de cualquier operación online que requiera token.
-// Devuelve true si hay token válido al terminar, false si no.
+// Asegura el token delegando de manera segura en el AuthManagerInstance
 async function asegurarToken() {
-
-    if (App.accessToken && tokenVigente()) return true;
-    if (!navigator.onLine || !App.tokenClient) return false;
-
-    const emailGuardado = localStorage.getItem('userEmail') || '';
-
-    return new Promise(resolve => {
-
-        const timeoutId = setTimeout(() => {
-            resolve(false);
-        }, 12000);
-
-        const callbackOriginal = App.tokenClient.callback;
-
-        App.tokenClient.callback = (tokenResponse) => {
-
-            clearTimeout(timeoutId);
-            App.tokenClient.callback = callbackOriginal;
-
-            if (tokenResponse?.access_token) {
-                App.accessToken = tokenResponse.access_token;
-                App.tokenExpira = Date.now() + (8 * 60 * 60 * 1000);
-                localStorage.setItem('tokenExpira', App.tokenExpira.toString());
-                localStorage.setItem('ultimaValidacion', Date.now().toString());
-                localStorage.setItem('sesionActiva', '1');
-                // También ejecutar callback original para actualizar UI
-                callbackOriginal?.(tokenResponse);
-                resolve(true);
-            } else {
-                resolve(false);
-            }
-        };
-
-        try {
-            App.tokenClient.requestAccessToken({
-                prompt    : '',
-                login_hint: emailGuardado
-            });
-        } catch (e) {
-            clearTimeout(timeoutId);
-            App.tokenClient.callback = callbackOriginal;
-            resolve(false);
-        }
-    });
+    try {
+        const token = await window.AuthManagerInstance.getValidToken();
+        return !!token;
+    } catch (e) {
+        console.warn("[Sync] No se pudo asegurar el token:", e.message);
+        return false;
+    }
 }
 
-// ── Consultar datos (Sheets o IndexedDB) ─────────────────
+// Consulta estructurada de expedientes a Google Sheets
 async function consultarDatos() {
+    if (App._entrandoApp) return;
+    App._entrandoApp = true;
 
-    if (!navigator.onLine) {
-        toast('Modo offline activo', 'warning');
-        const datosLocales = await cargarExpedientesLocal();
-        if (datosLocales.length > 0) {
-            App.rawData  = [COLUMNAS, ...datosLocales];
-            App.filtrados = App.rawData.slice(1);
-            prepararFiltros();
-            App.paginaActual = 1;
-            window.aplicarFiltroFinal();
-        } else {
-            toast('No existen datos guardados localmente.', 'error');
-        }
-        return;
-    }
-
-    if (!App.accessToken) {
-        if (tokenVigente() || ultimaValidacionVigente()) {
-            const datosLocales = await cargarExpedientesLocal();
-            if (datosLocales.length > 0) {
-                App.rawData   = [COLUMNAS, ...datosLocales];
-                App.filtrados = App.rawData.slice(1);
-                prepararFiltros();
-                App.paginaActual = 1;
-                window.aplicarFiltroFinal();
-            }
-        } else {
-            toast('Sesión expirada. Ingresa de nuevo.', 'warning');
-            window.cerrarSesion();
-        }
-        return;
-    }
-
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
     try {
+        if (!navigator.onLine) {
+            console.log('[Sync] Modo Offline: Cargando desde IndexedDB local...');
+            const locales = await obtenerExpedientesLocales();
+            App.rawData = locales;
+            App.filtrados = [...App.rawData];
+            if (typeof renderCards === 'function') renderCards(App.filtrados);
+            return;
+        }
+
+        // Obtener el token validado por el Mutex
+        let token;
+        try {
+            token = await window.AuthManagerInstance.getValidToken();
+        } catch(err) {
+            console.log('[Sync] Redirigiendo a carga local por falta de credenciales online.');
+            const locales = await obtenerExpedientesLocales();
+            App.rawData = locales;
+            App.filtrados = [...App.rawData];
+            if (typeof renderCards === 'function') renderCards(App.filtrados);
+            return;
+        }
+
+        toast('Sincronizando con Google Sheets...', 'success', 2000);
+
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A2:Y`;
         const response = await fetch(url, {
-            headers: { 'Authorization': 'Bearer ' + App.accessToken }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.status === 401) {
-            // Token expirado: intentar renovación silenciosa antes de cerrar sesión
-            App.accessToken = null;
-            App.tokenExpira = 0;
-            localStorage.removeItem('tokenExpira');
-
-            if (App.tokenClient && navigator.onLine) {
-                const emailGuardado = localStorage.getItem('userEmail') || '';
-                toast('Renovando sesión...', 'warning', 3000);
-                App.tokenClient.requestAccessToken({
-                    prompt    : '',
-                    login_hint: emailGuardado
-                });
-                // El callback de initGis llamará consultarDatos nuevamente
-            } else {
-                toast('Sesión expirada. Vuelve a ingresar.', 'warning');
-                window.cerrarSesion();
-            }
+            // Si el servidor rechaza el token por otra razón, limpiamos y reintentamos de forma interactiva
+            window.AuthManagerInstance.clearSessionLocal();
+            toast('Sesión expirada. Por favor vuelve a iniciar sesión.', 'warning');
             return;
         }
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
 
         const data = await response.json();
-        if (data.values && data.values.length > 1) {
-            App.rawData = data.values;
-            await guardarExpedientesLocal(data.values);
-            prepararFiltros();
-            App.paginaActual = 1;
-            App.filtrados    = App.rawData.slice(1);
-            window.aplicarFiltroFinal();
-        } else if (data.values?.length <= 1) {
-            toast('La hoja de datos está vacía.', 'warning');
-        } else {
-            throw new Error(data.error?.message || 'Respuesta inesperada de la API');
-        }
+        const filas = data.values || [];
+
+        const expedientesMapeados = filas.map((fila, index) => {
+            const obj = {};
+            COLUMNAS.forEach((col, idx) => {
+                obj[col] = fila[idx] || '';
+            });
+            obj.id = obj.id || (index + 2).toString(); // ID o Fila
+            return obj;
+        });
+
+        // Guardar la copia fresca en IndexedDB local
+        await vaciarYGuardarExpedientes(expedientesMapeados);
+
+        App.rawData = expedientesMapeados;
+        App.filtrados = [...App.rawData];
+        
+        if (typeof renderCards === 'function') renderCards(App.filtrados);
+
+        // Intentar procesar cambios pendientes en cola offline de haberlos
+        sincronizarPendientes();
+
     } catch (e) {
-        console.error('consultarDatos:', e);
-        toast('No se pudieron cargar los expedientes. ' + (e.message || ''), 'error');
+        console.error('[Sync] Error al consultar datos:', e);
+        toast('Cargando datos locales (Sin conexión al servidor)...', 'warning');
+        const locales = await obtenerExpedientesLocales();
+        App.rawData = locales;
+        App.filtrados = [...App.rawData];
+        if (typeof renderCards === 'function') renderCards(App.filtrados);
+    } finally {
+        App.App._entrandoApp = false;
     }
 }
 
-// ── Guardar nuevo expediente en Sheets ───────────────────
-async function guardarNuevoExpedienteRemoto(expediente) {
-
-    // El array debe coincidir exactamente con COLUMNAS (25 campos)
-    const fila = [
-        expediente[0],   // ID          — generado
-        expediente[1],   // Expediente
-        expediente[2],   // Acumulado
-        expediente[3],   // Juzgado
-        expediente[4],   // Cliente
-        expediente[5],   // Actor
-        expediente[6],   // Demandado
-        expediente[7],   // Juicio
-        expediente[8],   // Monto
-        expediente[9],   // Relacionado
-        expediente[10],  // Piezas
-        expediente[11],  // Estado_Procesal
-        expediente[12],  // Entidad_Federativa
-        expediente[13],  // Distrito_Judicial_o_Ciudad
-        expediente[14],  // Fuero
-        expediente[15],  // Recursos
-        expediente[16],  // Sentencia
-        expediente[17],  // Autorizados
-        expediente[18],  // Observaciones
-        expediente[19],  // Pendientes
-        expediente[20],  // Termino
-        expediente[21],  // Ultima_Modificacion
-        expediente[22],  // Ubicacion_del_Expediente
-        expediente[23],  // Ultima_revision
-        expediente[24],  // Nota_rapida
-    ];
-
-    const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Y:append?valueInputOption=USER_ENTERED`,
-        {
-            method : 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + App.accessToken,
-                'Content-Type' : 'application/json'
-            },
-            body: JSON.stringify({ values: [fila] })
-        }
-    );
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-}
-
-// ── Log en Google Sheets ──────────────────────────────────
+// Subir bitácora de auditoría legal limpia
 async function subirLogSheets(log) {
-    if (!navigator.onLine || !App.accessToken) return;
+    if (!navigator.onLine) return;
     try {
-        await fetch(
-            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:M:append?valueInputOption=USER_ENTERED`,
-            {
-                method : 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + App.accessToken,
-                    'Content-Type' : 'application/json'
-                },
-                body: JSON.stringify({
-                    values: [[
-                        log.logId,
-                        log.fecha,
-                        log.usuario,
-                        log.deviceId,
-                        log.expedienteId,
-                        log.campo,
-                        log.valorAnterior,
-                        log.valorNuevo,
-                        log.versionAnterior,
-                        log.versionNueva,
-                        log.modo,
-                        log.estado,
-                        log.hash
-                    ]]
-                })
-            }
-        );
+        const token = await window.AuthManagerInstance.getValidToken();
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:K:append?valueInputOption=USER_ENTERED`;
+        
+        // Estructura normalizada e ideal sugerida por el Master Prompt
+        const cuerpo = {
+            values: [[
+                log.logId || ('log_' + Date.now()),
+                log.timestampUtc || new Date().toISOString(),
+                localStorage.getItem('userEmail') || 'usuario_pwa',
+                DEVICE_ID,
+                log.expedienteId || '',
+                log.actionType || 'UPDATE',
+                JSON.stringify(log.changedFields || []),
+                JSON.stringify(log.oldValues || {}),
+                JSON.stringify(log.newValues || {}),
+                'SYNCED',
+                log.hash || ''
+            ]]
+        };
+
+        await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(cuerpo)
+        });
     } catch (e) {
-        console.error('Error LOG:', e);
+        console.error('[Sync Log] No se pudo subir el log a Sheets:', e);
     }
 }
 
-// ── Sincronizar cola de cambios pendientes ────────────────
+// Sincronizar cola de pendientes offline de forma segura
 let sincronizando = false;
-
 async function sincronizarPendientes() {
-
-    if (sincronizando)        return;
-    if (!navigator.onLine)    return;
-
-    if (!App.accessToken || !tokenVigente()) {
-        toast('Renovando sesión para sincronizar...', 'warning', 3000);
-        const ok = await asegurarToken();
-        if (!ok) {
-            toast('No fue posible sincronizar. Verifica tu conexión e intenta de nuevo.', 'warning', 6000);
-            return;
-        }
-    }
-
+    if (sincronizando || !navigator.onLine) return;
     sincronizando = true;
 
     try {
-        const pendientes = await obtenerQueuePendiente();
-        if (!pendientes.length) return;
+        const cola = await obtenerQueuePendiente();
+        if (!cola.length) return;
 
-        toast(`Sincronizando ${pendientes.length} cambios...`, 'warning', 4000);
+        const token = await window.AuthManagerInstance.getValidToken();
 
-        for (const item of pendientes) {
-
-            if (item.type === 'nuevo_expediente') {
-                await guardarNuevoExpedienteRemoto(item.expediente);
-                await eliminarQueueItem(item.queueId);
-                continue;
-            }
-
+        for (const item of cola) {
             try {
-                for (const u of item.updates) {
-                    const response = await fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${item.rowIndex}?valueInputOption=USER_ENTERED`,
-                        {
-                            method : 'PUT',
-                            headers: {
-                                'Authorization': 'Bearer ' + App.accessToken,
-                                'Content-Type' : 'application/json'
-                            },
-                            body: JSON.stringify({ values: [[u.value]] })
-                        }
-                    );
+                if (item.type === 'UPDATE_ROW') {
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${item.col}${item.rowIndex}?valueInputOption=USER_ENTERED`;
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ values: [[item.value]] })
+                    });
 
-                    if (response.status === 401) {
-                        App.accessToken = null;
-                        App.tokenExpira = 0;
-                        localStorage.removeItem('tokenExpira');
-                        toast('Sesión expirada. Inicia sesión nuevamente.', 'warning', 6000);
-                        return;
-                    }
                     if (response.status === 429) {
-                        await new Promise(r => setTimeout(r, 1500));
+                        await new Promise(r => setTimeout(r, 2000)); // Espera por cuota de Google API
+                        continue;
                     }
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 }
-
                 await eliminarQueueItem(item.queueId);
-
             } catch (e) {
-                console.error('Error sincronizando item:', e);
+                console.error('[Sync Pendientes] Error en item:', e);
             }
         }
-
-        toast('Sincronización completada.', 'success');
-
+        toast('Sincronización en segundo plano completada.', 'success');
     } finally {
         sincronizando = false;
     }
 }
 
-// ── Exportación diferida de pendientes ───────────────────
-let timerExportacionPendientes = null;
-
-function programarExportacionPendientes() {
-    if (timerExportacionPendientes) clearTimeout(timerExportacionPendientes);
-    timerExportacionPendientes = setTimeout(async () => {
-        try {
-            await exportarPendientes();
-            console.log('Pendientes exportados automáticamente.');
-        } catch (e) {
-            console.error('Error al exportar pendientes:', e);
-        }
-    }, 15 * 60 * 1000);
-}
-
-async function exportarPendientesAlCerrar() {
-    try { await exportarPendientes(); } catch (e) {}
-}
-
-// ── Listeners de conectividad ─────────────────────────────
+// Listeners automáticos de red
 window.addEventListener('online', () => {
-    toast('Conexión restaurada', 'success');
+    toast('Conexión de red restaurada', 'success');
     sincronizarPendientes();
 });
 
 window.addEventListener('offline', () => {
-    toast('Trabajando sin internet', 'warning', 5000);
+    toast('Trabajando en modo local (Sin Internet)', 'warning', 5000);
 });
