@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════
-// sync.js — Consulta de datos, sincronización y logs (REFACTORIZADO)
+// sync.js — Consulta de datos, sincronización y logs (CORREGIDO)
 // Depende de: config.js, auth.js, db.js
 // ════════════════════════════════════════════════════════════
 
@@ -50,7 +50,6 @@ async function consultarDatos() {
         });
 
         if (response.status === 401) {
-            // Si el servidor rechaza el token por otra razón, limpiamos y reintentamos de forma interactiva
             window.AuthManagerInstance.clearSessionLocal();
             toast('Sesión expirada. Por favor vuelve a iniciar sesión.', 'warning');
             return;
@@ -70,26 +69,28 @@ async function consultarDatos() {
             return obj;
         });
 
-        // Guardar la copia fresca en IndexedDB local
-        await vaciarYGuardarExpedientes(expedientesMapeados);
+        // USANDO TU FUNCIÓN REAL DE DB.JS:
+        if (typeof actualizarTodosLosExpedientes === 'function') {
+            await actualizarTodosLosExpedientes(expedientesMapeados);
+        }
 
         App.rawData = expedientesMapeados;
         App.filtrados = [...App.rawData];
         
         if (typeof renderCards === 'function') renderCards(App.filtrados);
 
-        // Intentar procesar cambios pendientes en cola offline de haberlos
+        // Intentar procesar cambios pendientes en cola offline
         sincronizarPendientes();
 
     } catch (e) {
         console.error('[Sync] Error al consultar datos:', e);
-        toast('Cargando datos locales (Sin conexión al servidor)...', 'warning');
+        toast('Cargando datos locales (Sin conexión)...', 'warning');
         const locales = await obtenerExpedientesLocales();
         App.rawData = locales;
         App.filtrados = [...App.rawData];
         if (typeof renderCards === 'function') renderCards(App.filtrados);
     } finally {
-        App.App._entrandoApp = false;
+        App._entrandoApp = false; // <-- Arreglado el error App.App
     }
 }
 
@@ -100,7 +101,6 @@ async function subirLogSheets(log) {
         const token = await window.AuthManagerInstance.getValidToken();
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:K:append?valueInputOption=USER_ENTERED`;
         
-        // Estructura normalizada e ideal sugerida por el Master Prompt
         const cuerpo = {
             values: [[
                 log.logId || ('log_' + Date.now()),
@@ -156,7 +156,7 @@ async function sincronizarPendientes() {
                     });
 
                     if (response.status === 429) {
-                        await new Promise(r => setTimeout(r, 2000)); // Espera por cuota de Google API
+                        await new Promise(r => setTimeout(r, 2000));
                         continue;
                     }
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
