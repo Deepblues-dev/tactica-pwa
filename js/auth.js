@@ -1,183 +1,189 @@
 // ════════════════════════════════════════════════════════════
-// sync.js — Consulta de datos, sincronización y logs (CORREGIDO)
-// Depende de: config.js, auth.js, db.js
+// auth.js — Autenticación OAuth, sesión local y renovación (ESTABLE)
+// Depende de: config.js
 // ════════════════════════════════════════════════════════════
 
-// Asegura el token delegando de manera segura en el AuthManagerInstance
-async function asegurarToken() {
-    try {
-        const token = await window.AuthManagerInstance.getValidToken();
-        return !!token;
-    } catch (e) {
-        console.warn("[Sync] No se pudo asegurar el token:", e.message);
-        return false;
-    }
+// ── Helpers de sesión corregidos ────────────────────────────
+function tokenVigente() {
+    return !!(App.tokenExpira && Date.now() < App.tokenExpira);
 }
 
-// Consulta estructurada de expedientes a Google Sheets
-async function consultarDatos() {
-    if (App._entrandoApp) return;
-    App._entrandoApp = true;
-
-    try {
-        if (!navigator.onLine) {
-            console.log('[Sync] Modo Offline: Cargando desde IndexedDB local...');
-            const locales = await obtenerExpedientesLocales();
-            App.rawData = locales;
-            App.filtrados = [...App.rawData];
-            if (typeof renderCards === 'function') renderCards(App.filtrados);
-            return;
-        }
-
-        // Obtener el token validado por el Mutex
-        let token;
-        try {
-            token = await window.AuthManagerInstance.getValidToken();
-        } catch(err) {
-            console.log('[Sync] Redirigiendo a carga local por falta de credenciales online.');
-            const locales = await obtenerExpedientesLocales();
-            App.rawData = locales;
-            App.filtrados = [...App.rawData];
-            if (typeof renderCards === 'function') renderCards(App.filtrados);
-            return;
-        }
-
-        toast('Sincronizando con Google Sheets...', 'success', 2000);
-
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A2:Y`;
-        const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (response.status === 401) {
-            window.AuthManagerInstance.clearSessionLocal();
-            toast('Sesión expirada. Por favor vuelve a iniciar sesión.', 'warning');
-            return;
-        }
-
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-        const data = await response.json();
-        const filas = data.values || [];
-
-        const expedientesMapeados = filas.map((fila, index) => {
-            const obj = {};
-            COLUMNAS.forEach((col, idx) => {
-                obj[col] = fila[idx] || '';
-            });
-            obj.id = obj.id || (index + 2).toString(); // ID o Fila
-            return obj;
-        });
-
-        // USANDO TU FUNCIÓN REAL DE DB.JS:
-        if (typeof actualizarTodosLosExpedientes === 'function') {
-            await actualizarTodosLosExpedientes(expedientesMapeados);
-        }
-
-        App.rawData = expedientesMapeados;
-        App.filtrados = [...App.rawData];
-        
-        if (typeof renderCards === 'function') renderCards(App.filtrados);
-
-        // Intentar procesar cambios pendientes en cola offline
-        sincronizarPendientes();
-
-    } catch (e) {
-        console.error('[Sync] Error al consultar datos:', e);
-        toast('Cargando datos locales (Sin conexión)...', 'warning');
-        const locales = await obtenerExpedientesLocales();
-        App.rawData = locales;
-        App.filtrados = [...App.rawData];
-        if (typeof renderCards === 'function') renderCards(App.filtrados);
-    } finally {
-        App._entrandoApp = false; // <-- Arreglado el error App.App
-    }
+function ultimaValidacionVigente() {
+    const ultima = parseInt(localStorage.getItem('ultimaValidacion') || '0', 10);
+    if (!ultima) return false;
+    return (Date.now() - ultima) < (4 * 60 * 60 * 1000); // 4 horas
 }
 
-// Subir bitácora de auditoría legal limpia
-async function subirLogSheets(log) {
+function sesionLocalVigente() {
+    return localStorage.getItem('sesionActiva') === '1';
+}
+
+// ── Guardado y Persistencia Real (Mantiene el token vivo tras F5) ──
+function guardarSesionLocal(accessToken, expiresInSeconds) {
+    const durationMs = (parseInt(expiresInSeconds, 10) || 3600) * 1000;
+    App.accessToken = accessToken;
+    App.tokenExpira = Date.now() + durationMs;
+
+    localStorage.setItem('accessToken', accessToken); // Guardado físico
+    localStorage.setItem('tokenExpira', App.tokenExpira.toString());
+    localStorage.setItem('sesionActiva', '1');
+    localStorage.setItem('ultimaValidacion', Date.now().toString());
+    console.log(`[Táctica Auth] Token guardado con éxito. Expira: ${new Date(App.tokenExpira).toLocaleTimeString()}`);
+}
+
+// ── Validación periódica (sin pánico) ───────────────────────
+async function validarSesionPeriodicamente() {
     if (!navigator.onLine) return;
-    try {
-        const token = await window.AuthManagerInstance.getValidToken();
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:K:append?valueInputOption=USER_ENTERED`;
-        
-        const cuerpo = {
-            values: [[
-                log.logId || ('log_' + Date.now()),
-                log.timestampUtc || new Date().toISOString(),
-                localStorage.getItem('userEmail') || 'usuario_pwa',
-                DEVICE_ID,
-                log.expedienteId || '',
-                log.actionType || 'UPDATE',
-                JSON.stringify(log.changedFields || []),
-                JSON.stringify(log.oldValues || {}),
-                JSON.stringify(log.newValues || {}),
-                'SYNCED',
-                log.hash || ''
-            ]]
-        };
-
-        await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(cuerpo)
-        });
-    } catch (e) {
-        console.error('[Sync Log] No se pudo subir el log a Sheets:', e);
+    if (App.tokenClient && App.accessToken) {
+        try {
+            // Intento silencioso
+            App.tokenClient.requestAccessToken({ prompt: '' });
+        } catch (e) {
+            console.error('Error en validación periódica:', e);
+        }
     }
 }
 
-// Sincronizar cola de pendientes offline de forma segura
-let sincronizando = false;
-async function sincronizarPendientes() {
-    if (sincronizando || !navigator.onLine) return;
-    sincronizando = true;
-
+// ── Obtener y guardar email sin romper la sesión ──────────
+async function obtenerYGuardarEmail() {
+    if (!App.accessToken) return;
     try {
-        const cola = await obtenerQueuePendiente();
-        if (!cola.length) return;
+        const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { 'Authorization': `Bearer ${App.accessToken}` }
+        });
+        
+        if (r.status === 401) {
+            console.warn('[Táctica Auth] Token no autorizado en userinfo (401). No limpiaremos la sesión para evitar bucles.');
+            return;
+        }
 
-        const token = await window.AuthManagerInstance.getValidToken();
-
-        for (const item of cola) {
-            try {
-                if (item.type === 'UPDATE_ROW') {
-                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${item.col}${item.rowIndex}?valueInputOption=USER_ENTERED`;
-                    const response = await fetch(url, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ values: [[item.value]] })
-                    });
-
-                    if (response.status === 429) {
-                        await new Promise(r => setTimeout(r, 2000));
-                        continue;
-                    }
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                }
-                await eliminarQueueItem(item.queueId);
-            } catch (e) {
-                console.error('[Sync Pendientes] Error en item:', e);
+        if (r.ok) {
+            const data = await r.json();
+            if (data.email) {
+                localStorage.setItem('userEmail', data.email);
+                console.log('[Táctica Auth] Correo del abogado guardado:', data.email);
             }
         }
-        toast('Sincronización en segundo plano completada.', 'success');
-    } finally {
-        sincronizando = false;
+    } catch (e) {
+        console.error('No se pudo obtener el email:', e);
     }
 }
 
-// Listeners automáticos de red
-window.addEventListener('online', () => {
-    toast('Conexión de red restaurada', 'success');
-    sincronizarPendientes();
-});
+// ── Inicialización de Google Identity Services (GIS) ───────
+window.initGis = async function() {
+    if (typeof google === 'undefined' || !google.accounts?.oauth2) return;
 
-window.addEventListener('offline', () => {
-    toast('Trabajando en modo local (Sin Internet)', 'warning', 5000);
-});
+    // Recuperar el token del almacenamiento físico inmediatamente al arrancar
+    const tokenGuardado = localStorage.getItem('accessToken');
+    const expiraGuardado = parseInt(localStorage.getItem('tokenExpira') || '0', 10);
+
+    if (tokenGuardado && expiraGuardado > Date.now()) {
+        App.accessToken = tokenGuardado;
+        App.tokenExpira = expiraGuardado;
+        console.log('[Táctica Auth] Token recuperado físicamente desde localStorage.');
+    }
+
+    // Configurar el cliente de Google con un callback seguro
+    App.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+        callback: (tokenResponse) => {
+            if (tokenResponse?.access_token) {
+                guardarSesionLocal(tokenResponse.access_token, tokenResponse.expires_in);
+                entrarApp();
+            } else {
+                console.error('[Táctica Auth] Respuesta de Google vacía o errónea.');
+                toast('Error de autenticación con Google', 'error');
+            }
+        }
+    });
+
+    const pantallaSplash = document.getElementById('splash-screen');
+    
+    // Si hay rastro de sesión activa, intentamos entrar directamente
+    if (sesionLocalVigente()) {
+        await entrarApp();
+    } else {
+        if (pantallaSplash) pantallaSplash.style.display = 'flex';
+        document.getElementById('search-bar').style.display     = 'none';
+        document.getElementById('btn-logout-nav').style.display = 'none';
+    }
+};
+
+// ── Cierre de sesión limpio ────────────────────────────────
+window.cerrarSesion = () => {
+    const token = App.accessToken || localStorage.getItem('accessToken');
+    if (token && typeof google !== 'undefined' && google.accounts?.oauth2) {
+        try { google.accounts.oauth2.revoke(token, () => {}); } catch(e){}
+    }
+
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('sesionActiva');
+    localStorage.removeItem('ultimaValidacion');
+    localStorage.removeItem('tokenExpira');
+    localStorage.removeItem('userEmail');
+
+    App.accessToken = null;
+    App.tokenExpira = 0;
+
+    location.reload();
+};
+
+// ── Entrar a la app (post-login o refresh) ─────────────────
+async function entrarApp() {
+    const splash = document.getElementById('splash-screen');
+    
+    // Forzar apertura de la base de datos local si no se ha abierto
+    if (typeof initDB === 'function' && typeof db === 'undefined') {
+        try { await initDB(); } catch(e) { console.error(e); }
+    }
+
+    // Si está offline, entra con lo que tenga en IndexedDB
+    if (!navigator.onLine) {
+        if (splash) splash.style.display = 'none';
+        document.getElementById('search-bar').style.display     = 'block';
+        document.getElementById('btn-logout-nav').style.display = 'flex';
+        if (typeof consultarDatos === 'function') await consultarDatos();
+        return;
+    }
+
+    // Si ya tenemos el token cargado en memoria RAM o local, pasamos directo sin molestar a Google
+    if (App.accessToken && tokenVigente()) {
+        if (splash) splash.style.display = 'none';
+        document.getElementById('search-bar').style.display     = 'block';
+        document.getElementById('btn-logout-nav').style.display = 'flex';
+        
+        if (typeof actualizarVisibilidadBtnNuevo === 'function') {
+            actualizarVisibilidadBtnNuevo();
+        }
+        
+        await obtenerYGuardarEmail();
+        if (typeof consultarDatos === 'function') await consultarDatos();
+        return;
+    }
+
+    // Si la sesión dice estar activa pero el token caducó, intentamos renovación silenciosa
+    if (sesionLocalVigente() && App.tokenClient) {
+        try {
+            console.log('[Táctica Auth] Token caducado. Intentando renovación automática...');
+            App.tokenClient.requestAccessToken({ prompt: '' });
+        } catch (e) {
+            console.warn('[Táctica Auth] Falló renovación silenciosa. Esperando clic del usuario.');
+            if (splash) splash.style.display = 'flex';
+        }
+    } else {
+        if (splash) splash.style.display = 'flex';
+    }
+}
+
+// Botón manual de inicio de sesión
+window.iniciarLoginInteractivo = () => {
+    if (!App.tokenClient) {
+        toast('El sistema de Google no está listo. Reintenta en un momento.', 'warning');
+        return;
+    }
+    App.tokenClient.requestAccessToken({ prompt: 'select_account' });
+};
+
+// Puentes de compatibilidad absolutos
+window.iniciarSesion = () => window.iniciarLoginInteractivo();
