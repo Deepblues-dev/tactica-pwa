@@ -27,12 +27,13 @@ function sesionLocalVigente() {
 // ── Validación periódica (llamada cada 120 min) ───────────
 async function validarSesionPeriodicamente() {
 
-    if (!navigator.onLine) {
+  if (!navigator.onLine) {
         if (!ultimaValidacionVigente()) {
             toast('La sesión debe validarse nuevamente.', 'warning', 6000);
             window.cerrarSesion();
         }
         return;
+        
     }
 
     if (App.tokenClient && App.accessToken) {
@@ -285,7 +286,7 @@ async function entrarApp() {
     return;
 }
 
-    if (
+ /*   if ( 
     navigator.onLine &&
     App.tokenClient &&
     localStorage.getItem('userEmail')
@@ -308,7 +309,8 @@ async function entrarApp() {
             e
         );
     }
-}
+} */
+    
     await consultarDatos();
 }
 
