@@ -47,7 +47,7 @@ async function validarSesionPeriodicamente() {
 // ── Obtener y guardar email (login_hint para renovaciones) ─
 async function obtenerYGuardarEmail() {
 
-    if (!tokenVigente()) return;
+if (!App.accessToken) return;
 
     if (localStorage.getItem('userEmail')) return;
 
@@ -62,16 +62,16 @@ async function obtenerYGuardarEmail() {
             }
         );
 
-        if (res.status === 401) {
+      if (res.status === 401) {
 
-            console.warn('[OAuth] Token inválido para userinfo.');
+    console.warn(
+        '[OAuth] Token expirado para userinfo.'
+    );
 
-            localStorage.removeItem('accessToken');
+    App.accessToken = null;
 
-            App.accessToken = null;
-
-            return;
-        }
+    return;
+}
 
         if (!res.ok) return;
 
@@ -151,11 +151,11 @@ if (tokenResponse && tokenResponse.access_token) {
     });
 
     // ── Auto-login en refresh ─────────────────────────────
-    if (sesionLocalVigente()) {
-        
-        App.accessToken = localStorage.getItem('accessToken') || null;
-        App.tokenExpira = parseInt(localStorage.getItem('tokenExpira') || '0');
+   if (sesionLocalVigente()) {
 
+    App.tokenExpira =
+        parseInt(localStorage.getItem('tokenExpira') || '0');
+       
         // Entrar inmediatamente con datos locales (sin esperar red ni token)
         if (!App._entrandoApp) {
             App._entrandoApp = true;
@@ -249,7 +249,6 @@ window.cerrarSesion = () => {
     localStorage.removeItem('ultimaValidacion');
     localStorage.removeItem('tokenExpira');
     localStorage.removeItem('userEmail');
-    localStorage.removeItem('accessToken');
 
     App.accessToken = null;
     App.tokenExpira = 0;
@@ -273,19 +272,41 @@ async function entrarApp() {
         return;
     }
 
-    if (App.accessToken) {
+  if (App.accessToken) {
+
+    if (!localStorage.getItem('userEmail')) {
+
         obtenerYGuardarEmail();
-        await consultarDatos();
-        return;
+
     }
 
-    if (tokenVigente() && App.tokenClient) {
-        try {
-            App.tokenClient.requestAccessToken({ prompt: '' });
-            return;
-        } catch (e) {
-            console.error('No se pudo renovar el token:', e);
-        }
+    await consultarDatos();
+
+    return;
+}
+
+    if (
+    navigator.onLine &&
+    App.tokenClient &&
+    localStorage.getItem('userEmail')
+) {
+
+    try {
+
+        App.tokenClient.requestAccessToken({
+            prompt: '',
+            login_hint:
+                localStorage.getItem('userEmail')
+        });
+
+        return;
+
+    } catch (e) {
+
+        console.error(
+            'No se pudo recuperar la sesión:',
+            e
+        );
     }
 
     await consultarDatos();
