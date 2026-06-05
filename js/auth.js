@@ -25,7 +25,7 @@ function sesionLocalVigente() {
 }
 
 // ── Validación periódica (llamada cada 120 min) ───────────
-/*async function validarSesionPeriodicamente() {
+async function validarSesionPeriodicamente() {
 
   if (!navigator.onLine) {
         if (!ultimaValidacionVigente()) {
@@ -44,7 +44,7 @@ function sesionLocalVigente() {
         }
     }
 }
-*/
+
 // ── Obtener y guardar email (login_hint para renovaciones) ─
 async function obtenerYGuardarEmail() {
 
@@ -92,12 +92,12 @@ if (!App.accessToken) return;
 }
 
 // ── Renovar token silenciosamente ─────────────────────────
-/*function renovarToken() {
+function renovarToken() {
     if (App.tokenClient && navigator.onLine) {
         App.tokenClient.requestAccessToken({ prompt: '' });
     }
 }
-*/
+
 // ── Inicializar Google Identity Services ─────────────────
 window.initGis = async function () {
 
