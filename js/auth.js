@@ -108,17 +108,27 @@ window.initGis = async function () {
         scope     : 'https://www.googleapis.com/auth/spreadsheets',
 
         callback: (tokenResponse) => {
+if (tokenResponse && tokenResponse.access_token) {
 
-            if (tokenResponse && tokenResponse.access_token) {
+   App.accessToken = tokenResponse.access_token;
 
-               App.accessToken = tokenResponse.access_token;
-App.tokenExpira = Date.now() + ((tokenResponse.expires_in || 3600) * 1000);
+   App.tokenExpira =
+       Date.now() + ((tokenResponse.expires_in || 3600) * 1000);
 
-localStorage.setItem('accessToken', App.accessToken);
+   localStorage.setItem(
+       'ultimaValidacion',
+       Date.now().toString()
+   );
 
-                localStorage.setItem('ultimaValidacion', Date.now().toString());
-                localStorage.setItem('sesionActiva', '1');
-                localStorage.setItem('tokenExpira', App.tokenExpira.toString());
+   localStorage.setItem(
+       'sesionActiva',
+       '1'
+   );
+
+   localStorage.setItem(
+       'tokenExpira',
+       App.tokenExpira.toString()
+   );
 
                 if (!App.timerRenovacion) {
                     App.timerRenovacion = setInterval(
