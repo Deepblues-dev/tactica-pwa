@@ -308,6 +308,6 @@ async function entrarApp() {
             e
         );
     }
-
+}
     await consultarDatos();
 }
