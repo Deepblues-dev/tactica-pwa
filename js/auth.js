@@ -311,3 +311,21 @@ async function entrarApp() {
 }
     await consultarDatos();
 }
+
+window.validarCredenciales = function () {
+
+    if (!App.tokenClient) {
+
+        toast(
+            'Sistema de autenticación no disponible.',
+            'warning',
+            4000
+        );
+
+        return;
+    }
+
+    App.tokenClient.requestAccessToken({
+        prompt: 'select_account'
+    });
+};
