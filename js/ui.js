@@ -257,12 +257,21 @@ function renderCards(filas) {
             : (c(21) || '---');
 
         const badgeOffline = !acceso
-            ? `<div class="text-end mb-1" style="font-size:0.6rem;">
-                <span style="background:#f0ad4e22;color:#b8860b;padding:2px 6px;border-radius:4px;border:1px solid #f0ad4e55;">
-                    🔒 Modo público
-                </span>
-               </div>`
-            : '';
+    ? `<div class="text-end mb-1" style="font-size:0.6rem;">
+        <span
+            onclick="validarCredenciales()"
+            style="
+                cursor:pointer;
+                background:#f0ad4e22;
+                color:#b8860b;
+                padding:2px 6px;
+                border-radius:4px;
+                border:1px solid #f0ad4e55;
+            ">
+            🔒 Modo público
+        </span>
+       </div>`
+    : '';
 
         contenedor.innerHTML += `
         <div class="card card-exp">
