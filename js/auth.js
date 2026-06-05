@@ -25,7 +25,7 @@ function sesionLocalVigente() {
 }
 
 // ── Validación periódica (llamada cada 120 min) ───────────
-async function validarSesionPeriodicamente() {
+/*async function validarSesionPeriodicamente() {
 
   if (!navigator.onLine) {
         if (!ultimaValidacionVigente()) {
@@ -44,7 +44,7 @@ async function validarSesionPeriodicamente() {
         }
     }
 }
-
+*/
 // ── Obtener y guardar email (login_hint para renovaciones) ─
 async function obtenerYGuardarEmail() {
 
