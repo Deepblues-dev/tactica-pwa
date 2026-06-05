@@ -13,12 +13,18 @@ function tokenVigente() {
     );
 }
 
+function tokenExpiraVigente() {
+    return !!(
+        App.tokenExpira &&
+        Date.now() < App.tokenExpira
+    );
+}
+
 function ultimaValidacionVigente() {
     const ultima = parseInt(localStorage.getItem('ultimaValidacion') || '0', 10);
     if (!ultima) return false;
-    return (Date.now() - ultima) < (4 * 60 * 60 * 1000); // 4 horas
+    return (Date.now() - ultima) < ( 60 * 60 * 1000); // 1 hora
 }
-
 function sesionLocalVigente() {
     return localStorage.getItem('sesionActiva') === '1' &&
            ultimaValidacionVigente();
@@ -27,13 +33,12 @@ function sesionLocalVigente() {
 // ── Validación periódica (llamada cada 120 min) ───────────
 async function validarSesionPeriodicamente() {
 
-  if (!navigator.onLine) {
+    if (!navigator.onLine) {
         if (!ultimaValidacionVigente()) {
             toast('La sesión debe validarse nuevamente.', 'warning', 6000);
             window.cerrarSesion();
         }
         return;
-        
     }
 
     if (App.tokenClient && App.accessToken) {
@@ -163,7 +168,7 @@ if (tokenResponse && tokenResponse.access_token) {
             entrarApp().finally(() => { App._entrandoApp = false; });
         }
 
-        // Renovación silenciosa: solo si el token de memoria ya expiró
+        // Renovación silenciosa: solo si el token de memoria sigue vigente
         // y hay conexión disponible.
         // IMPORTANTE: en Chrome Android, requestAccessToken fuera de un
         // gesto de usuario puede mostrar el selector de cuenta aunque
@@ -173,9 +178,8 @@ if (tokenResponse && tokenResponse.access_token) {
         // - Si el token ya expiró, NO intentar silencioso automático en móvil;
         //   esperar a que el usuario haga una acción (sincronizar, editar)
         //   para disparar la renovación en contexto de gesto.
-        if (navigator.onLine && tokenVigente()) {
-
-            const emailGuardado = localStorage.getItem('userEmail') || '';
+        const emailGuardado = localStorage.getItem('userEmail') || '';
+        if (navigator.onLine && emailGuardado && tokenExpiraVigente()) {
 
             App._silenciosoTimeout = setTimeout(() => {
                 App._silenciosoTimeout = null;
@@ -286,31 +290,21 @@ async function entrarApp() {
     return;
 }
 
- /*   if ( 
-    navigator.onLine &&
-    App.tokenClient &&
-    localStorage.getItem('userEmail')
-) {
-
-    try {
-
-        App.tokenClient.requestAccessToken({
-            prompt: '',
-            login_hint:
-                localStorage.getItem('userEmail')
-        });
-
-        return;
-
-    } catch (e) {
-
-        console.error(
-            'No se pudo recuperar la sesión:',
-            e
-        );
+    if (
+        navigator.onLine &&
+        App.tokenClient &&
+        localStorage.getItem('userEmail')
+    ) {
+        try {
+            App.tokenClient.requestAccessToken({
+                prompt: '',
+                login_hint: localStorage.getItem('userEmail')
+            });
+        } catch (e) {
+            console.error('No se pudo recuperar la sesión:', e);
+        }
     }
-} */
-    
+
     await consultarDatos();
 }
 
