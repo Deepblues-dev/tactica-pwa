@@ -111,10 +111,10 @@ window.initGis = async function () {
     App.tokenClient = google.accounts.oauth2.initTokenClient({
 
         client_id : CLIENT_ID,
-        scope     : 'https://www.googleapis.com/auth/spreadsheets',
+        scope     : 'https://www.googleapis.com/auth/spreadsheets openid email',
 
         callback: (tokenResponse) => {
-if (tokenResponse && tokenResponse.access_token) {
+            if (tokenResponse && tokenResponse.access_token) {
 
    App.accessToken = tokenResponse.access_token;
 
