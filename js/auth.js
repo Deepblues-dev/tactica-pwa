@@ -92,12 +92,12 @@ if (!App.accessToken) return;
 }
 
 // ── Renovar token silenciosamente ─────────────────────────
-function renovarToken() {
+/*function renovarToken() {
     if (App.tokenClient && navigator.onLine) {
         App.tokenClient.requestAccessToken({ prompt: '' });
     }
 }
-
+*/
 // ── Inicializar Google Identity Services ─────────────────
 window.initGis = async function () {
 
