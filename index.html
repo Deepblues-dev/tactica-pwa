@@ -437,16 +437,7 @@
       <div class="modal-header bg-dark text-white" style="border-bottom:2px solid var(--gold);">
         <h5 class="modal-title">Editar Expediente</h5>
 
-        <div class="form-check form-switch ms-3">
-          <input class="form-check-input"
-                 type="checkbox"
-                 id="toggle-edicion"
-                 onchange="window.toggleModoEdicion()">
-
-          <label class="form-check-label small fw-bold" for="toggle-edicion">
-            EDICIÓN COMPLETA
-          </label>
-        </div>
+                <!-- Edición completa reservada para acceso máximo (PC) -->
 
         <button type="button"
                 class="btn-close btn-close-white"
@@ -511,6 +502,33 @@
             </div>
 
           </div>
+
+                    <div class="row g-2 mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Relacionado</label>
+                            <input type="text" id="edit-relacionado" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Piezas</label>
+                            <input type="text" id="edit-piezas" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Recursos</label>
+                            <input type="text" id="edit-recursos" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Sentencia</label>
+                            <input type="text" id="edit-sentencia" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Autorizados</label>
+                            <input type="text" id="edit-autorizados" class="form-control">
+                        </div>
+                    </div>
 
           <div class="mt-3">
             <label class="form-label fw-bold small">
