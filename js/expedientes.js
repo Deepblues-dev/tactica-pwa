@@ -11,6 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) modalEdit = new bootstrap.Modal(el);
 });
 
+// ── Panel Administrador ──────────────────────────────────
+window.abrirAdmin = () => {
+    const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (esMovil) {
+        toast('Panel de administrador solo disponible en PC.', 'warning', 5000);
+        return;
+    }
+    if (!tieneAccesoPrivado()) {
+        toast('Debes ingresar al sistema para acceder.', 'warning', 5000);
+        return;
+    }
+    toast('Panel de administrador — próximamente.', 'info', 3000);
+    // TODO: Implementar panel de administración
+};
+
 // ── Modal Nuevo Expediente ────────────────────────────────
 window.abrirFormularioNuevoExpediente = () => {
 
