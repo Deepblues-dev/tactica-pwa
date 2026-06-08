@@ -165,9 +165,38 @@ window.initGis = async function () {
             entrarApp().finally(() => { App._entrandoApp = false; });
         }
 
-        // No solicitemos token automáticamente en el refresh.
-        // El token se renovará cuando el usuario realice una acción
-        // explícita que requiera acceso a Google.
+        // Renovación silenciosa: solo si el token de memoria sigue vigente
+        // y hay conexión disponible.
+        // IMPORTANTE: en Chrome Android, requestAccessToken fuera de un
+        // gesto de usuario puede mostrar el selector de cuenta aunque
+        // prompt='' si la cookie de Google expiró. Para evitarlo:
+        // - Solo se intenta si tokenExpira indica que el token SIGUE vigente
+        //   (significa que Google aún tiene la sesión activa en el dispositivo)
+        // - Si el token ya expiró, NO intentar silencioso automático en móvil;
+        //   esperar a que el usuario haga una acción (sincronizar, editar)
+        //   para disparar la renovación en contexto de gesto.
+        const emailGuardado = localStorage.getItem('userEmail') || '';
+        if (navigator.onLine && tokenVigente()) {
+
+            App._silenciosoTimeout = setTimeout(() => {
+                App._silenciosoTimeout = null;
+                console.warn('[Táctica] Token silencioso: timeout. Usando datos locales.');
+            }, 12000);
+
+            try {
+                App.tokenClient.requestAccessToken({
+                    prompt    : '',
+                    login_hint: emailGuardado
+                });
+            } catch (e) {
+                clearTimeout(App._silenciosoTimeout);
+                App._silenciosoTimeout = null;
+                console.warn('[Táctica] Token silencioso: error.', e);
+            }
+        }
+        // Si el token expiró: la app entra con datos locales (offline mode).
+        // El token se renovará la próxima vez que el usuario interactúe
+        // con una función que requiera red (editar, sincronizar).
     }
 };
 
@@ -258,6 +287,26 @@ async function entrarApp() {
     return;
 }
 
+    if (
+        navigator.onLine &&
+        App.tokenClient &&
+        localStorage.getItem('userEmail')
+    ) {
+        try {
+            App.tokenClient.requestAccessToken({
+                prompt: '',
+                login_hint: localStorage.getItem('userEmail')
+            });
+
+            return;
+
+        } catch (e) {
+            console.error(
+                'No se pudo recuperar la sesión:',
+                e
+            );
+        }
+    }
     await consultarDatos();
 }
 
