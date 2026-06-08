@@ -196,6 +196,19 @@ window.setTipoRevision = function (tipo) {
 };
 
 // ── Abrir editor ──────────────────────────────────────────
+function mostrarSheetRow(row) {
+    const label = document.getElementById('edit-sheet-row-info');
+    const value = document.getElementById('edit-sheet-row-value');
+    if (!label || !value) return;
+    if (row && !isNaN(Number(row))) {
+        value.textContent = row;
+        label.style.display = 'block';
+    } else {
+        value.textContent = 'No disponible';
+        label.style.display = 'block';
+    }
+}
+
 window.abrirEditor = function (index) {
     if (index < 0 || index >= App.rawData.length) {
         toast('No se encontró el expediente.', 'error');
@@ -206,6 +219,7 @@ window.abrirEditor = function (index) {
     const targetRow = index + 1;
     console.log('[editar] abrirEditor', { index, targetRow, expediente: fila[1], expedienteId: fila[0] });
     document.getElementById('edit-row-index').value      = targetRow;
+    mostrarSheetRow(targetRow);
     document.getElementById('edit-nota').value           = fila[24] || '';
     document.getElementById('edit-ubicacion').value      = fila[22] || '';
     document.getElementById('edit-estado').value         = fila[11] || '';
@@ -330,12 +344,12 @@ window.guardarCambios = async function () {
 
         if (!sheetRow) {
             toast('No se pudo determinar la fila de hoja para el expediente.', 'error');
-            restaurarBoton();
-            return;
-        }
+                mostrarSheetRow(null);
+                restaurarBoton();
+                return;
+            }
 
-        const filaNueva    = [...filaOriginal];
-        const updates      = [];
+            mostrarSheetRow(sheetRow);
 
         function pushUpdate(col, value) {
             const index = col.charCodeAt(0) - 65;
