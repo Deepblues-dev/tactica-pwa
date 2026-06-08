@@ -54,6 +54,18 @@ function puedeAgregarExpediente() {
     return esPCmac && navigator.onLine && tieneAccesoPrivado();
 }
 
+function esMovil() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function puedeEditarCompleto() {
+    return !esMovil() && tieneAccesoPrivado();
+}
+
+function estaPublico() {
+    return !tieneAccesoPrivado();
+}
+
 // ── Guardar Nuevo Expediente ──────────────────────────────
 window.nuevoExpediente = async function () {
 
@@ -184,6 +196,28 @@ window.abrirEditor = function (index) {
     document.getElementById('edit-observaciones').value  = fila[18] || '';
     document.getElementById('tipo-revision').value       = '';
 
+    const publicMode = estaPublico();
+    const fullEdit   = puedeEditarCompleto();
+
+    const toggleEl      = document.getElementById('toggle-edicion');
+    const toggleWrapper = toggleEl?.closest('.form-check');
+    if (toggleWrapper) {
+        toggleWrapper.style.display = fullEdit ? '' : 'none';
+    }
+
+    toggleEl.checked = false;
+    toggleEl.disabled = !fullEdit;
+
+    const rowSimpleFields = document.querySelector('#modo-simple .row.g-2');
+    const estadoSimple    = document.querySelector('#modo-simple > .mt-3');
+    if (publicMode) {
+        if (rowSimpleFields) rowSimpleFields.style.display = 'none';
+        if (estadoSimple) estadoSimple.style.display = 'none';
+    } else {
+        if (rowSimpleFields) rowSimpleFields.style.display = '';
+        if (estadoSimple) estadoSimple.style.display = '';
+    }
+
     const cont = document.getElementById('contenedor-edicion-completa');
     cont.innerHTML = '';
     COLUMNAS.forEach((nombre, i) => {
@@ -259,13 +293,17 @@ window.guardarCambios = async function () {
             updates.push({ col, value });
         }
 
+        const publicMode = estaPublico();
+
         if (!completo) {
             pushUpdate('Y', document.getElementById('edit-nota').value);
-            pushUpdate('W', document.getElementById('edit-ubicacion').value);
-            pushUpdate('L', document.getElementById('edit-estado').value);
-            pushUpdate('U', document.getElementById('edit-termino').value);
-            pushUpdate('T', document.getElementById('edit-pendientes').value);
-            pushUpdate('S', document.getElementById('edit-observaciones').value);
+            if (!publicMode) {
+                pushUpdate('W', document.getElementById('edit-ubicacion').value);
+                pushUpdate('L', document.getElementById('edit-estado').value);
+                pushUpdate('U', document.getElementById('edit-termino').value);
+                pushUpdate('T', document.getElementById('edit-pendientes').value);
+                pushUpdate('S', document.getElementById('edit-observaciones').value);
+            }
         } else {
             document.querySelectorAll('.campo-completo').forEach(el => {
                 const index = parseInt(el.dataset.index, 10);
