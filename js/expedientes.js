@@ -203,7 +203,9 @@ window.abrirEditor = function (index) {
     }
 
     const fila = App.rawData[index];
-    document.getElementById('edit-row-index').value      = index + 1;
+    const targetRow = index + 1;
+    console.log('[editar] abrirEditor', { index, targetRow, expediente: fila[1], expedienteId: fila[0] });
+    document.getElementById('edit-row-index').value      = targetRow;
     document.getElementById('edit-nota').value           = fila[24] || '';
     document.getElementById('edit-ubicacion').value      = fila[22] || '';
     document.getElementById('edit-estado').value         = fila[11] || '';
@@ -280,8 +282,18 @@ window.guardarCambios = async function () {
             }
         }
 
-        const rowIndex     = document.getElementById('edit-row-index').value;
-        const tipoRevision = document.getElementById('tipo-revision').value;
+        const rowIndexValue = document.getElementById('edit-row-index').value;
+        const rowIndex      = Number(rowIndexValue);
+        const tipoRevision  = document.getElementById('tipo-revision').value;
+
+        console.log('[editar] guardarCambios', {
+            rowIndexValue,
+            rowIndex,
+            expedienteId: App.rawData[rowIndex - 1]?.[0],
+            nota: document.getElementById('edit-nota').value,
+            ubicacion: document.getElementById('edit-ubicacion').value,
+            publicMode: estaPublico()
+        });
 
         if (!tipoRevision) {
             toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
@@ -401,9 +413,28 @@ window.guardarCambios = async function () {
             programarExportacionPendientes();
             toast('Guardado offline. Pendiente de sincronización.', 'warning', 5000);
         } else {
+            // Determinar fila objetivo (sheetRow). Usar rowIndex si es válido, sino buscar por expedienteId.
+            let sheetRow = null;
+            if (rowIndex && !isNaN(Number(rowIndex))) {
+                sheetRow = Number(rowIndex);
+            } else if (filaNueva[0]) {
+                const datos = App.rawData.slice(1);
+                const found = datos.findIndex(r => String(r[0]) === String(filaNueva[0]));
+                if (found >= 0) sheetRow = found + 2; // slice[0] == hoja row 2
+            }
+
+            if (!sheetRow) {
+                toast('No se pudo determinar la fila objetivo para la actualización remota.', 'error', 6000);
+                console.error('[editar] sheetRow no determinado', { rowIndex, expedienteId: filaNueva[0], filaNueva });
+                restaurarBoton();
+                return;
+            }
+
+            console.log('[editar] actualizando remota', { sheetRow, cambiosReales });
+
             for (const u of cambiosReales) {
                 const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${sheetRow}?valueInputOption=USER_ENTERED`,
                     {
                         method : 'PUT',
                         headers: {
@@ -417,7 +448,7 @@ window.guardarCambios = async function () {
                 if (response.status === 429) {
                     await new Promise(r => setTimeout(r, 1000));
                     const retry = await fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
+                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${sheetRow}?valueInputOption=USER_ENTERED`,
                         {
                             method : 'PUT',
                             headers: {
