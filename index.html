@@ -203,6 +203,23 @@
 .btn-add-text {
     display: inline-block;
 }
+
+    /* ── Responsivo: ocultar botón nuevo expediente en móvil ── */
+    @media (max-width: 768px) {
+        #btn-add-nav {
+            display: none !important;
+        }
+    }
+
+    /* ── Mostrar botón administrador solo en PC ── */
+    #btn-admin-nav {
+        display: none;
+    }
+    @media (min-width: 769px) {
+        #btn-admin-nav {
+            display: inline-flex !important;
+        }
+    }
     
     .form-check-input:checked {
     background-color: var(--gold) !important;
@@ -293,6 +310,35 @@
 
 </div>
 
+      <!-- ADMINISTRADOR (solo PC) -->
+      <button
+        class="btn-logout btn-admin"
+        id="btn-admin-nav"
+        style="
+            display:none;
+            align-items:center;
+            gap:6px;
+            white-space:nowrap;
+            padding-left:20px;
+        "
+        onclick="window.abrirAdmin()"
+        title="Panel de administrador">
+
+        <span class="material-symbols-outlined"
+              style="font-size:30px !important;">
+            admin_panel_settings
+        </span>
+
+        <span style="
+            font-size:0.82rem;
+            font-weight:700;
+            letter-spacing:0.5px;
+        ">
+            ADMIN
+        </span>
+
+      </button>
+
       <!-- LOGOUT -->
      <div class="d-flex align-items-center gap-2">
 
@@ -306,7 +352,7 @@
         white-space:nowrap;
         padding-left:20px;
     "
-    onclick="window.cerrarSesion()">
+    onclick="window.cerrarSesion()">  
 
     <span class="material-symbols-outlined"
           style="font-size:30px !important;">
