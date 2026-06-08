@@ -218,14 +218,20 @@ window.abrirEditor = function (index) {
     // El toggle de edición completa fue eliminado de la UI; dejar control
     // del modo completo solo para acceso PC con token (reserva).
 
-    const rowSimpleFields = document.querySelector('#modo-simple .row.g-2');
-    const estadoSimple    = document.querySelector('#modo-simple > .mt-3');
+    // En modo público, ocultar todos los campos excepto Nota y Ubicación
     if (publicMode) {
-        if (rowSimpleFields) rowSimpleFields.style.display = 'none';
-        if (estadoSimple) estadoSimple.style.display = 'none';
+        document.getElementById('campo-termino')?.style.display = 'none';
+        document.getElementById('campo-pendientes')?.style.display = 'none';
+        document.getElementById('campo-observaciones')?.style.display = 'none';
+        document.getElementById('row-private-mobile-fields')?.style.display = 'none';
+        document.getElementById('campo-estado')?.style.display = 'none';
     } else {
-        if (rowSimpleFields) rowSimpleFields.style.display = '';
-        if (estadoSimple) estadoSimple.style.display = '';
+        // Mostrar campos en modo privado-móvil
+        document.getElementById('campo-termino')?.style.display = '';
+        document.getElementById('campo-pendientes')?.style.display = '';
+        document.getElementById('campo-observaciones')?.style.display = '';
+        document.getElementById('row-private-mobile-fields')?.style.display = '';
+        document.getElementById('campo-estado')?.style.display = '';
     }
 
     const cont = document.getElementById('contenedor-edicion-completa');
@@ -309,9 +315,13 @@ window.guardarCambios = async function () {
         const publicMode = estaPublico();
 
         if (!completo) {
-            pushUpdate('Y', document.getElementById('edit-nota').value);
-            if (!publicMode) {
-                // Campos editables en privadaMovil: 9,10,11,15,16,17,18,19,20,22,24
+            if (publicMode) {
+                // MODO PÚBLICO: solo Nota Rápida (Y) y Ubicación del Expediente (W)
+                pushUpdate('Y', document.getElementById('edit-nota').value);
+                pushUpdate('W', document.getElementById('edit-ubicacion').value);
+            } else {
+                // MODO PRIVADA MÓVIL: todos los campos de la tabla
+                pushUpdate('Y', document.getElementById('edit-nota').value);
                 pushUpdate('J', document.getElementById('edit-relacionado')?.value || ''); // 9
                 pushUpdate('K', document.getElementById('edit-piezas')?.value || '');      //10
                 pushUpdate('L', document.getElementById('edit-estado').value);            //11
@@ -351,7 +361,8 @@ window.guardarCambios = async function () {
             campos      : camposModificados,
             totalCampos : camposModificados.length,
             fecha,
-            modo        : navigator.onLine ? 'ONLINE' : 'OFFLINE'
+            modo        : navigator.onLine ? 'ONLINE' : 'OFFLINE',
+            capas       : publicMode ? 'PÚBLICO' : 'PRIVADA_MÓVIL'
         };
 
         const hash = await generarHash(logBase);
@@ -368,6 +379,7 @@ window.guardarCambios = async function () {
             versionAnterior: filaOriginal[21] || '',
             versionNueva   : fecha,
             modo           : navigator.onLine ? 'ONLINE' : 'OFFLINE',
+            capas          : publicMode ? 'PÚBLICO' : 'PRIVADA_MÓVIL',
             estado         : navigator.onLine ? 'SYNCED'  : 'PENDING',
             hash
         };
