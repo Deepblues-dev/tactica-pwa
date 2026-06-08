@@ -199,14 +199,8 @@ window.abrirEditor = function (index) {
     const publicMode = estaPublico();
     const fullEdit   = puedeEditarCompleto();
 
-    const toggleEl      = document.getElementById('toggle-edicion');
-    const toggleWrapper = toggleEl?.closest('.form-check');
-    if (toggleWrapper) {
-        toggleWrapper.style.display = fullEdit ? '' : 'none';
-    }
-
-    toggleEl.checked = false;
-    toggleEl.disabled = !fullEdit;
+    // El toggle de edición completa fue eliminado de la UI; dejar control
+    // del modo completo solo para acceso PC con token (reserva).
 
     const rowSimpleFields = document.querySelector('#modo-simple .row.g-2');
     const estadoSimple    = document.querySelector('#modo-simple > .mt-3');
@@ -272,7 +266,9 @@ window.guardarCambios = async function () {
             return;
         }
 
-        const completo = document.getElementById('toggle-edicion').checked;
+        // Edición completa quedó reservada para acceso PC+token y no hay
+        // control UI para activarla por ahora. Forzar a false aquí.
+        const completo = (puedeEditarCompleto() && false);
 
         const ahora = new Date();
         const fecha =
@@ -298,11 +294,17 @@ window.guardarCambios = async function () {
         if (!completo) {
             pushUpdate('Y', document.getElementById('edit-nota').value);
             if (!publicMode) {
-                pushUpdate('W', document.getElementById('edit-ubicacion').value);
-                pushUpdate('L', document.getElementById('edit-estado').value);
-                pushUpdate('U', document.getElementById('edit-termino').value);
-                pushUpdate('T', document.getElementById('edit-pendientes').value);
-                pushUpdate('S', document.getElementById('edit-observaciones').value);
+                // Campos editables en privadaMovil: 9,10,11,15,16,17,18,19,20,22,24
+                pushUpdate('J', document.getElementById('edit-relacionado')?.value || ''); // 9
+                pushUpdate('K', document.getElementById('edit-piezas')?.value || '');      //10
+                pushUpdate('L', document.getElementById('edit-estado').value);            //11
+                pushUpdate('P', document.getElementById('edit-recursos')?.value || '');    //15
+                pushUpdate('Q', document.getElementById('edit-sentencia')?.value || '');   //16
+                pushUpdate('R', document.getElementById('edit-autorizados')?.value || ''); //17
+                pushUpdate('S', document.getElementById('edit-observaciones').value);      //18
+                pushUpdate('T', document.getElementById('edit-pendientes').value);        //19
+                pushUpdate('U', document.getElementById('edit-termino').value);           //20
+                pushUpdate('W', document.getElementById('edit-ubicacion').value);         //22
             }
         } else {
             document.querySelectorAll('.campo-completo').forEach(el => {
