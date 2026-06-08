@@ -289,7 +289,7 @@ window.guardarCambios = async function () {
         console.log('[editar] guardarCambios', {
             rowIndexValue,
             rowIndex,
-            expedienteId: App.rawData[rowIndex - 1]?.[0],
+            tipoRevision,
             nota: document.getElementById('edit-nota').value,
             ubicacion: document.getElementById('edit-ubicacion').value,
             publicMode: estaPublico()
@@ -315,6 +315,25 @@ window.guardarCambios = async function () {
             String(ahora.getSeconds()).padStart(2, '0');
 
         const filaOriginal = App.rawData[rowIndex - 1];
+        if (!filaOriginal) {
+            toast('No se encontró la fila a actualizar.', 'error');
+            restaurarBoton();
+            return;
+        }
+
+        const expedienteId = filaOriginal[0];
+        let sheetRow = rowIndex > 1 ? rowIndex : null;
+        if (!sheetRow && expedienteId) {
+            const found = App.rawData.findIndex(r => String(r[0]) === String(expedienteId));
+            if (found >= 1) sheetRow = found;
+        }
+
+        if (!sheetRow) {
+            toast('No se pudo determinar la fila de hoja para el expediente.', 'error');
+            restaurarBoton();
+            return;
+        }
+
         const filaNueva    = [...filaOriginal];
         const updates      = [];
 
@@ -402,7 +421,7 @@ window.guardarCambios = async function () {
 
         if (!navigator.onLine) {
             await agregarCambioQueue({ 
-                rowIndex, 
+                rowIndex: sheetRow, 
                 expedienteId: filaNueva[0], 
                 fila: filaNueva, 
                 updates: cambiosReales, 
