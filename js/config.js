@@ -79,6 +79,6 @@ const COLUMNAS_NO_EDITABLES = [0, 21, 23];
 const CAPAS = {
     ocultos      : [0],
     publica      : [1, 3, 10, 22, 23, 24],
-    privadaMovil : [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+    privadaMovil : [2, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
     // privadaDesktop: []  ← Capa 3, implementación futura (P3)
 };
