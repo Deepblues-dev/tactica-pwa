@@ -69,17 +69,14 @@ if (!App.accessToken) return;
         );
 
       if (res.status === 401) {
+            console.warn('[OAuth] No se pudo obtener userinfo: token inválido o scope insuficiente.');
+            return;
+        }
 
-    console.warn(
-        '[OAuth] Token expirado para userinfo.'
-    );
-
-    App.accessToken = null;
-
-    return;
-}
-
-        if (!res.ok) return;
+        if (!res.ok) {
+            console.warn('[OAuth] Error obteniendo userinfo:', res.status, res.statusText);
+            return;
+        }
 
         const info = await res.json();
 
