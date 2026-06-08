@@ -56,6 +56,11 @@ async function asegurarToken() {
 // ── Consultar datos (Sheets o IndexedDB) ─────────────────
 async function consultarDatos() {
 
+    // Si estamos online, sincronizar cola ANTES de cargar datos remotos
+    if (navigator.onLine && !window.sincronizacionEnProgreso) {
+        await sincronizarPendientes();
+    }
+
     if (!navigator.onLine) {
         toast('Modo offline activo', 'warning');
         const datosLocales = await cargarExpedientesLocal();
@@ -187,7 +192,7 @@ async function subirLogSheets(log) {
     if (!navigator.onLine || !App.accessToken) return;
     try {
         await fetch(
-            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:M:append?valueInputOption=USER_ENTERED`,
+            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:N:append?valueInputOption=USER_ENTERED`,
             {
                 method : 'POST',
                 headers: {
@@ -207,6 +212,7 @@ async function subirLogSheets(log) {
                         log.versionAnterior,
                         log.versionNueva,
                         log.modo,
+                        log.capas,
                         log.estado,
                         log.hash
                     ]]
@@ -220,6 +226,9 @@ async function subirLogSheets(log) {
 
 // ── Sincronizar cola de cambios pendientes ────────────────
 let sincronizando = false;
+
+// Flag global para bloquear refresh mientras se sincroniza
+window.sincronizacionEnProgreso = false;
 
 async function sincronizarPendientes() {
 
@@ -236,6 +245,7 @@ async function sincronizarPendientes() {
     }
 
     sincronizando = true;
+    window.sincronizacionEnProgreso = true;
 
     try {
         const pendientes = await obtenerQueuePendiente();
@@ -252,7 +262,21 @@ async function sincronizarPendientes() {
             }
 
             try {
-                for (const u of item.updates) {
+                // Actualizar campo V (Ultima_Modificacion) con timestamp de modificación, no de sincronización
+                const fechaModificacion = item.fecha || new Date().toLocaleString('es-MX');
+                let columnasFinal = item.updates.slice();
+
+                // Si V (Ultima_Modificacion) no está en updates, agregarlo con la fecha de modificación
+                if (!columnasFinal.some(u => u.col === 'V')) {
+                    columnasFinal.push({ col: 'V', value: fechaModificacion });
+                } else {
+                    // Si sí está, reemplazar su valor con el timestamp de modificación
+                    columnasFinal = columnasFinal.map(u => 
+                        u.col === 'V' ? { col: 'V', value: fechaModificacion } : u
+                    );
+                }
+
+                for (const u of columnasFinal) {
                     const response = await fetch(
                         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${item.rowIndex}?valueInputOption=USER_ENTERED`,
                         {
@@ -289,6 +313,7 @@ async function sincronizarPendientes() {
 
     } finally {
         sincronizando = false;
+        window.sincronizacionEnProgreso = false;
     }
 }
 
