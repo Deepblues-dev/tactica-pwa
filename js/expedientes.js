@@ -164,10 +164,11 @@ window.nuevoExpediente = async function () {
 };
 
 // ── Toggle modo edición ───────────────────────────────────
+// NOTA: El toggle fue eliminado del modal. Esta función se mantiene por compatibilidad.
 window.toggleModoEdicion = function () {
-    const completo = document.getElementById('toggle-edicion').checked;
-    document.getElementById('modo-simple').style.display   = completo ? 'none'  : 'block';
-    document.getElementById('modo-completo').style.display = completo ? 'block' : 'none';
+    // Edición completa reservada para acceso PC. Deshabilitada por ahora.
+    document.getElementById('modo-simple').style.display = 'block';
+    document.getElementById('modo-completo').style.display = 'none';
 };
 
 // ── Tipo de revisión ──────────────────────────────────────
@@ -223,8 +224,9 @@ window.abrirEditor = function (index) {
             </div>`;
     });
 
-    document.getElementById('toggle-edicion').checked = false;
-    window.toggleModoEdicion();
+    // Mostrar siempre modo-simple (la edición completa está reservada)
+    document.getElementById('modo-simple').style.display = 'block';
+    document.getElementById('modo-completo').style.display = 'none';
     if (modalEdit) modalEdit.show();
 };
 
