@@ -220,18 +220,18 @@ window.abrirEditor = function (index) {
 
     // En modo público, ocultar todos los campos excepto Nota y Ubicación
     if (publicMode) {
-        document.getElementById('campo-termino')?.style.display = 'none';
-        document.getElementById('campo-pendientes')?.style.display = 'none';
-        document.getElementById('campo-observaciones')?.style.display = 'none';
-        document.getElementById('row-private-mobile-fields')?.style.display = 'none';
-        document.getElementById('campo-estado')?.style.display = 'none';
+        const camposOcultar = ['campo-termino', 'campo-pendientes', 'campo-observaciones', 'row-private-mobile-fields', 'campo-estado'];
+        camposOcultar.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
     } else {
         // Mostrar campos en modo privado-móvil
-        document.getElementById('campo-termino')?.style.display = '';
-        document.getElementById('campo-pendientes')?.style.display = '';
-        document.getElementById('campo-observaciones')?.style.display = '';
-        document.getElementById('row-private-mobile-fields')?.style.display = '';
-        document.getElementById('campo-estado')?.style.display = '';
+        const camposMostrar = ['campo-termino', 'campo-pendientes', 'campo-observaciones', 'row-private-mobile-fields', 'campo-estado'];
+        camposMostrar.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
     }
 
     const cont = document.getElementById('contenedor-edicion-completa');
