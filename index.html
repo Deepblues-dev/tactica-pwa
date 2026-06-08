@@ -495,7 +495,7 @@
         <!-- EDICIÓN SIMPLE -->
         <div id="modo-simple">
 
-          <div class="mb-3">
+          <div class="mb-3" id="campo-nota">
             <label class="form-label fw-bold small">
               Nota rápida
             </label>
@@ -505,9 +505,9 @@
                       rows="3"></textarea>
           </div>
 
-          <div class="row g-2">
+          <div class="row g-2" id="row-base-fields">
 
-            <div class="col-md-6">
+            <div class="col-md-6" id="campo-ubicacion">
               <label class="form-label fw-bold small">
                 Ubicación del expediente
               </label>
@@ -517,7 +517,7 @@
                      class="form-control">
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-6" id="campo-termino">
               <label class="form-label fw-bold small">
                 Término
               </label>
@@ -527,7 +527,7 @@
                      class="form-control">
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-6" id="campo-pendientes">
               <label class="form-label fw-bold small">
                 Pendientes
               </label>
@@ -537,7 +537,7 @@
                         rows="2"></textarea>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-6" id="campo-observaciones">
               <label class="form-label fw-bold small">
                 Observaciones
               </label>
@@ -549,7 +549,7 @@
 
           </div>
 
-                    <div class="row g-2 mt-2">
+                    <div class="row g-2 mt-2" id="row-private-mobile-fields">
                         <div class="col-md-6">
                             <label class="form-label fw-bold small">Relacionado</label>
                             <input type="text" id="edit-relacionado" class="form-control">
@@ -576,7 +576,7 @@
                         </div>
                     </div>
 
-          <div class="mt-3">
+          <div class="mt-3" id="campo-estado">
             <label class="form-label fw-bold small">
               Estado Procesal
             </label>
@@ -846,6 +846,17 @@
 
 <!-- Google Identity Services (carga al final para no bloquear) -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Bloquear refresh mientras hay sincronización en progreso -->
+<script>
+window.addEventListener('beforeunload', (e) => {
+    if (window.sincronizacionEnProgreso) {
+        e.preventDefault();
+        e.returnValue = 'Sincronización en progreso. Por favor espera...';
+        return false;
+    }
+});
+</script>
 
 <!-- Inicialización — espera a que GIS esté listo -->
 <script>
