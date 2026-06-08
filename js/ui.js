@@ -216,7 +216,10 @@ function renderCards(filas) {
     contenedor.innerHTML = '';
 
     slice.forEach(f => {
-        const realIndex = App.rawData.indexOf(f);
+        let realIndex = App.rawData.findIndex(r => String(r[0]) === String(f[0]));
+        if (realIndex < 0) {
+            realIndex = App.rawData.indexOf(f);
+        }
         const acceso    = tieneAccesoPrivado();
         const c         = idx => campo(f, idx);
         const bloqueado = idx => !acceso && CAPAS.privadaMovil.includes(idx);
