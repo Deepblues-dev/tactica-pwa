@@ -276,9 +276,28 @@ async function sincronizarPendientes() {
                     );
                 }
 
+                // Determinar fila objetivo en la hoja. Preferir item.rowIndex si es válido,
+                // sino buscar la fila por `expedienteId` en `App.rawData` como respaldo.
+                let sheetRow = null;
+                if (item.rowIndex && !isNaN(Number(item.rowIndex))) {
+                    sheetRow = Number(item.rowIndex);
+                } else if (item.expedienteId) {
+                    const datos = App.rawData.slice(1); // evitar cabecera
+                    const found = datos.findIndex(r => String(r[0]) === String(item.expedienteId));
+                    if (found >= 0) sheetRow = found + 2; // slice index -> hoja (slice[0] == hoja row 2)
+                }
+
+                console.log('[sync] item', { item, sheetRow });
+
+                if (!sheetRow) {
+                    console.warn('No se pudo determinar la fila objetivo para item:', item);
+                    // Evitar sobreescribir la fila 1 por defecto; saltar este item y continuar.
+                    continue;
+                }
+
                 for (const u of columnasFinal) {
                     const response = await fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${item.rowIndex}?valueInputOption=USER_ENTERED`,
+                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${sheetRow}?valueInputOption=USER_ENTERED`,
                         {
                             method : 'PUT',
                             headers: {
