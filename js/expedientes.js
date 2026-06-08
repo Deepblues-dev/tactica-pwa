@@ -377,7 +377,14 @@ window.guardarCambios = async function () {
         App.rawData[rowIndex - 1] = filaNueva;
 
         if (!navigator.onLine) {
-            await agregarCambioQueue({ rowIndex, expedienteId: filaNueva[0], fila: filaNueva, updates: cambiosReales, fecha });
+            await agregarCambioQueue({ 
+                rowIndex, 
+                expedienteId: filaNueva[0], 
+                fila: filaNueva, 
+                updates: cambiosReales, 
+                fecha,  // Timestamp de MODIFICACIÓN (cuando el usuario hizo los cambios)
+                type: 'update'
+            });
             await registrarLog(log);
             programarExportacionPendientes();
             toast('Guardado offline. Pendiente de sincronización.', 'warning', 5000);
