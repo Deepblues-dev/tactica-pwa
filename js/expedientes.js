@@ -470,7 +470,6 @@ window.guardarCambios = async function () {
             restaurarBoton();
             return;
         }
-const logIdOperacion = crypto.randomUUID();
 
 const logs = [];
 
@@ -499,7 +498,7 @@ for (const cambio of cambiosReales) {
 
     logs.push({
 
-        logId: logIdOperacion,
+logId: crypto.randomUUID(),
 
         fecha,
 
