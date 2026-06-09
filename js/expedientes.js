@@ -169,7 +169,7 @@ window.nuevoExpediente = async function () {
             campos     : ['NUEVO_EXPEDIENTE'],
             fecha      : fechaLog,
             modo       : 'ONLINE',
-            nivelAcceso: 'PRIVADA_MÓVIL'
+            nivelAcceso: 'ADMIN'
         };
         const hash = await generarHash(logBase);
 
@@ -186,10 +186,9 @@ window.nuevoExpediente = async function () {
             versionAnterior: '',
             versionNueva   : fechaLog,
             modo           : 'ONLINE',
-            nivelAcceso    : 'PRIVADA_MÓVIL',
             estado         : 'SYNCED',
-            hash           :          ,
-            nivelAcceso    : 'PRIVADA_MOVIL',
+            hash           : '',
+            nivelAcceso    : 'PRIVADA_MÓVIL',          
             
         };
 
@@ -546,6 +545,8 @@ for (const cambio of cambiosReales) {
             publicMode
                 ? 'PUBLICO'
                 : 'PRIVADA_MOVIL'
+                : 'PC'
+                : 'ADMIN'
     });
 }
 
