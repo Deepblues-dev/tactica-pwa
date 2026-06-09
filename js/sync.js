@@ -143,37 +143,39 @@ async function consultarDatos() {
 // ── Guardar nuevo expediente en Sheets ───────────────────
 async function guardarNuevoExpedienteRemoto(expediente) {
 
-    // El array debe coincidir exactamente con COLUMNAS (25 campos)
+    // El array debe coincidir exactamente con COLUMNAS (25 campos).
+    // Índice 0 (ID) se deja vacío — se calculará del número de fila
+    // retornado por Sheets en updatedRange.
     const fila = [
-        expediente[0],   // ID          — generado
-        expediente[1],   // Expediente
-        expediente[2],   // Acumulado
-        expediente[3],   // Juzgado
-        expediente[4],   // Cliente
-        expediente[5],   // Actor
-        expediente[6],   // Demandado
-        expediente[7],   // Juicio
-        expediente[8],   // Monto
-        expediente[9],   // Relacionado
-        expediente[10],  // Piezas
-        expediente[11],  // Estado_Procesal
-        expediente[12],  // Entidad_Federativa
-        expediente[13],  // Distrito_Judicial_o_Ciudad
-        expediente[14],  // Fuero
-        expediente[15],  // Recursos
-        expediente[16],  // Sentencia
-        expediente[17],  // Autorizados
-        expediente[18],  // Observaciones
-        expediente[19],  // Pendientes
-        expediente[20],  // Termino
-        expediente[21],  // Ultima_Modificacion
-        expediente[22],  // Ubicacion_del_Expediente
-        expediente[23],  // Ultima_revision
-        expediente[24],  // Nota_rapida
+        '',              // 0  ID — se asigna después con el número de fila real
+        expediente[1],   // 1  Expediente
+        expediente[2],   // 2  Acumulado
+        expediente[3],   // 3  Juzgado
+        expediente[4],   // 4  Cliente
+        expediente[5],   // 5  Actor
+        expediente[6],   // 6  Demandado
+        expediente[7],   // 7  Juicio
+        expediente[8],   // 8  Monto
+        expediente[9],   // 9  Relacionado
+        expediente[10],  // 10 Piezas
+        expediente[11],  // 11 Estado_Procesal
+        expediente[12],  // 12 Entidad_Federativa
+        expediente[13],  // 13 Distrito_Judicial_o_Ciudad
+        expediente[14],  // 14 Fuero
+        expediente[15],  // 15 Recursos
+        expediente[16],  // 16 Sentencia
+        expediente[17],  // 17 Autorizados
+        expediente[18],  // 18 Observaciones
+        expediente[19],  // 19 Pendientes
+        expediente[20],  // 20 Termino
+        expediente[21],  // 21 Ultima_Modificacion
+        expediente[22],  // 22 Ubicacion_del_Expediente
+        expediente[23],  // 23 Ultima_revision
+        expediente[24],  // 24 Nota_rapida
     ];
 
     const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Y:append?valueInputOption=USER_ENTERED`,
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Y:append?valueInputOption=USER_ENTERED&includeValuesInResponse=false`,
         {
             method : 'POST',
             headers: {
@@ -185,6 +187,50 @@ async function guardarNuevoExpedienteRemoto(expediente) {
     );
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const resultado = await response.json();
+
+    // Extraer el número de fila real donde Sheets insertó el registro.
+    // updatedRange devuelve algo como "DB!A52:Y52" — extraemos 52.
+    // Ese número de fila ES el ID consecutivo de la BD.
+    let idConsecutivo = null;
+    try {
+        const range = resultado?.updates?.updatedRange || '';
+        // Formato: "DB!A52:Y52" o "'DB'!A52:Y52"
+        const match = range.match(/[A-Z]+(\d+)/);
+        if (match) {
+            idConsecutivo = parseInt(match[1], 10);
+        }
+    } catch (e) {
+        console.warn('[nuevo expediente] No se pudo extraer ID del range:', e);
+    }
+
+    // Si no se pudo extraer, usar el máximo ID actual + 1 como fallback
+    if (!idConsecutivo) {
+        const ids = App.rawData.slice(1)
+            .map(r => parseInt(r[0], 10))
+            .filter(n => !isNaN(n));
+        idConsecutivo = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+        console.warn('[nuevo expediente] ID de fila no extraído, usando fallback:', idConsecutivo);
+    }
+
+    // Escribir el ID consecutivo en la celda A de la fila recién creada
+    await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A${idConsecutivo}?valueInputOption=USER_ENTERED`,
+        {
+            method : 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + App.accessToken,
+                'Content-Type' : 'application/json'
+            },
+            body: JSON.stringify({ values: [[String(idConsecutivo)]] })
+        }
+    );
+
+    console.log('[nuevo expediente] Creado en fila', idConsecutivo, '— ID asignado:', idConsecutivo);
+
+    // Devolver el ID para que nuevoExpediente() lo use en el log
+    return idConsecutivo;
 }
 
 // ── Log en Google Sheets ──────────────────────────────────
