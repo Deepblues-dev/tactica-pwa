@@ -146,16 +146,58 @@ window.nuevoExpediente = async function () {
     }
 
     try {
-        // 1. Guardar en Google Sheets (obligatorio — solo se llega aquí online + token)
-        await guardarNuevoExpedienteRemoto(nuevaFila);
+        // 1. Guardar en Google Sheets y obtener número de fila asignado
+        //    guardarNuevoExpedienteRemoto devuelve el ID consecutivo real
+        //    extraído del updatedRange de la respuesta de Sheets.
+        const idAsignado = await guardarNuevoExpedienteRemoto(nuevaFila);
 
-        // 2. Recargar datos desde Sheets para obtener el ID real asignado.
-        //    Verificar token antes de llamar — puede haber expirado durante el guardado.
+        // 2. Actualizar la fila local con el ID real
+        nuevaFila[0] = String(idAsignado);
+
+        // 3. Generar log del nuevo expediente
+        const ahora2   = new Date();
+        const fechaLog =
+            String(ahora2.getDate()).padStart(2, '0')      + '/' +
+            String(ahora2.getMonth() + 1).padStart(2, '0') + '/' +
+            ahora2.getFullYear() + ' ' +
+            String(ahora2.getHours()).padStart(2, '0')     + ':' +
+            String(ahora2.getMinutes()).padStart(2, '0')   + ':' +
+            String(ahora2.getSeconds()).padStart(2, '0');
+
+        const logBase = {
+            expediente : nuevaFila[1],
+            campos     : ['NUEVO_EXPEDIENTE'],
+            fecha      : fechaLog,
+            modo       : 'ONLINE',
+            capas      : 'PRIVADA_MÓVIL'
+        };
+        const hash = await generarHash(logBase);
+
+        const log = {
+            logId          : crypto.randomUUID(),
+            fecha          : fechaLog,
+            usuario        : localStorage.getItem('userEmail') || 'desconocido',
+            deviceId       : DEVICE_ID,
+            expedienteId   : String(idAsignado),
+            campo          : 'ALTA',
+            valorAnterior  : '',
+            valorNuevo     : `Expediente ${nuevaFila[1]} creado`,
+            versionAnterior: '',
+            versionNueva   : fechaLog,
+            modo           : 'ONLINE',
+            capas          : 'PRIVADA_MÓVIL',
+            estado         : 'SYNCED',
+            hash
+        };
+
+        // Registrar en IndexedDB y subir a hoja LOGS
+        await registrarLog(log);
+        await subirLogSheets(log);
+
+        // 4. Recargar datos desde Sheets
         if (App.accessToken && tokenVigente()) {
             await consultarDatos();
         } else {
-            // Token expirado: renovar silenciosamente.
-            // consultarDatos() se llamará desde el callback de initGis.
             toast('Expediente guardado. Actualizando lista...', 'success', 3000);
             if (App.tokenClient && navigator.onLine) {
                 const email = localStorage.getItem('userEmail') || '';
@@ -163,9 +205,9 @@ window.nuevoExpediente = async function () {
             }
         }
 
-        // 3. Cerrar modal y notificar
+        // 5. Cerrar modal y notificar
         window.cerrarFormularioNuevoExpediente();
-        toast('Expediente creado correctamente.', 'success', 4000);
+        toast(`Expediente creado correctamente. ID: ${idAsignado}`, 'success', 5000);
 
     } catch (e) {
         console.error('Error al crear expediente:', e);
