@@ -169,7 +169,7 @@ window.nuevoExpediente = async function () {
             campos     : ['NUEVO_EXPEDIENTE'],
             fecha      : fechaLog,
             modo       : 'ONLINE',
-            nivelAcceso: 'ADMIN'
+            nivelAcceso: 'PC'
         };
         const hash = await generarHash(logBase);
 
@@ -188,7 +188,7 @@ window.nuevoExpediente = async function () {
             modo           : 'ONLINE',
             estado         : 'SYNCED',
             hash           : hash,
-            nivelAcceso    : 'PRIVADA_MÓVIL',          
+            nivelAcceso    : 'PC',          
             
         };
 
@@ -421,7 +421,7 @@ window.guardarCambios = async function () {
                 pushUpdate('Y', document.getElementById('edit-nota').value);
                 pushUpdate('W', document.getElementById('edit-ubicacion').value);
             } else {
-                // MODO PRIVADA MÓVIL: todos los campos de la tabla
+                // MODO PRIVADA MOVIL: todos los campos de la tabla
                 pushUpdate('Y', document.getElementById('edit-nota').value);
                 pushUpdate('J', document.getElementById('edit-relacionado')?.value || ''); // 9
                 pushUpdate('K', document.getElementById('edit-piezas')?.value || '');      //10
