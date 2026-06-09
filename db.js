@@ -1,5 +1,5 @@
 const DB_NAME = 'tactica-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let db;
 
@@ -18,7 +18,22 @@ async function initDB() {
         request.onupgradeneeded = e => {
 
             db = e.target.result;
+            
+             const logsStore = request.transaction
+    ? request.transaction.objectStore('logs')
+    : null;
 
+if (
+    logsStore &&
+    !logsStore.indexNames.contains('syncedLog')
+) {
+
+    logsStore.createIndex(
+        'syncedLog',
+        'syncedLog',
+        { unique: false }
+    );
+}
             // ═══════════════════════════════
             // EXPEDIENTES
             // ═══════════════════════════════
@@ -102,6 +117,11 @@ async function initDB() {
                     'estado',
                     { unique: false }
                 );
+                logsStore.createIndex(
+                'syncedLog',
+                'syncedLog',
+              { unique: false }
+                 );
             }
         };
 
@@ -456,7 +476,7 @@ async function registrarLog(log) {
             ...log,
 
             createdAt:
-                Date.now()
+                Date.now(),
        
             syncedLog:
                 log.syncedLog || false
