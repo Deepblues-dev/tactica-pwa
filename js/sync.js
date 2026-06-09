@@ -238,7 +238,7 @@ async function subirLogSheets(log) {
     if (!navigator.onLine || !App.accessToken) return;
     try {
         await fetch(
-            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${LOG_SHEET}!A:N:append?valueInputOption=USER_ENTERED`,
+            `https://sheets.googleapis.com/v4/spreadsheets/${LOG_SHEET_ID}/values/${LOG_SHEET}!A:O:append?valueInputOption=USER_ENTERED`,
             {
                 method : 'POST',
                 headers: {
@@ -246,22 +246,23 @@ async function subirLogSheets(log) {
                     'Content-Type' : 'application/json'
                 },
                 body: JSON.stringify({
-                    values: [[
-                        log.logId,
-                        log.fecha,
-                        log.usuario,
-                        log.deviceId,
-                        log.expedienteId,
-                        log.campo,
-                        log.valorAnterior,
-                        log.valorNuevo,
-                        log.versionAnterior,
-                        log.versionNueva,
-                        log.modo,
-                        log.capas,
-                        log.estado,
-                        log.hash
-                    ]]
+                   values: [[
+    log.logId,
+    log.fecha,
+    log.usuario,
+    log.deviceId,
+    log.expedienteId,
+    log.expedienteNum,
+    log.campo,
+    log.valorAnterior,
+    log.valorNuevo,
+    log.versionAnterior,
+    log.versionNueva,
+    log.modo,
+    log.estado,
+    log.hash,
+    log.nivelAcceso
+]] 
                 })
             }
         );
