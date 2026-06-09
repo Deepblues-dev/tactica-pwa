@@ -587,6 +587,84 @@ window.guardarCambios = async function () {
 
 
 // ════════════════════════════════════════════════════════════
+// ADVERTENCIA AL CERRAR CON BORRADOR SUCIO
+// ════════════════════════════════════════════════════════════
+
+function _mostrarAdvertenciaCierre() {
+
+    // Evitar duplicados
+    if (document.getElementById('modal-advertencia-cierre')) return;
+
+    const html = `
+    <div id="modal-advertencia-cierre" style="
+        position:fixed; inset:0; z-index:999999;
+        background:rgba(0,0,0,0.65);
+        display:flex; align-items:center; justify-content:center;
+        padding:16px;
+    ">
+        <div style="
+            background:#fff; border-radius:12px; max-width:420px; width:100%;
+            box-shadow:0 8px 32px rgba(0,0,0,0.35);
+            overflow:hidden;
+        ">
+            <!-- Header -->
+            <div style="
+                background:#c0392b; color:#fff;
+                padding:16px 20px;
+                font-weight:700; font-size:1rem;
+            ">
+                ⚠️ Cambios sin guardar
+            </div>
+
+            <!-- Cuerpo -->
+            <div style="padding:20px; color:#333; font-size:0.95rem; line-height:1.5;">
+                Tienes cambios que <strong>no han sido guardados</strong>.<br><br>
+                ¿Qué deseas hacer?
+            </div>
+
+            <!-- Botones -->
+            <div style="
+                padding:12px 20px 20px;
+                display:flex; flex-direction:column; gap:10px;
+            ">
+                <button id="btn-adv-continuar" style="
+                    padding:11px 16px; border:none; border-radius:8px;
+                    background:#1d3557; color:#fff;
+                    cursor:pointer; font-weight:700; font-size:0.95rem;
+                ">✏️ Continuar editando</button>
+
+                <button id="btn-adv-descartar" style="
+                    padding:11px 16px; border:none; border-radius:8px;
+                    background:#c0392b; color:#fff;
+                    cursor:pointer; font-weight:600; font-size:0.95rem;
+                ">🗑️ Descartar cambios y cerrar</button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    const overlay  = document.getElementById('modal-advertencia-cierre');
+    const btnCont  = document.getElementById('btn-adv-continuar');
+    const btnDesc  = document.getElementById('btn-adv-descartar');
+
+    // CONTINUAR EDITANDO — cerrar advertencia, el editor sigue abierto
+    btnCont.addEventListener('click', () => {
+        overlay.remove();
+        // No hacer nada más — modalEdit sigue abierto, borrador intacto
+    });
+
+    // DESCARTAR — limpiar borrador y cerrar el editor limpiamente
+    btnDesc.addEventListener('click', () => {
+        overlay.remove();
+        _limpiarBorrador(_borrador_rowIndex);
+        _borrador_sucio = false;
+        // Ahora sí cerrar Bootstrap modal (sin trigger de hide listener)
+        if (modalEdit) modalEdit.hide();
+    });
+}
+
+// ════════════════════════════════════════════════════════════
 // SISTEMA DE BORRADOR — guarda cambios no confirmados
 // Persiste en sessionStorage para sobrevivir cambio de foco,
 // pérdida de conexión o cambio de aplicación.
@@ -655,15 +733,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Al cerrar el modal sin guardar: conservar borrador (no limpiarlo)
+    // ── Interceptar cierre del modal de edición ──────────
     const modalEl = document.getElementById('modalEditar');
     if (modalEl) {
+
+        // 'hide.bs.modal' se dispara ANTES de cerrar — permite cancelar.
+        // Si hay borrador sucio, mostrar advertencia en lugar de cerrar.
+        modalEl.addEventListener('hide.bs.modal', (e) => {
+            if (_borrador_sucio && _borrador_rowIndex) {
+                // Cancelar el cierre de Bootstrap
+                e.preventDefault();
+                e.stopPropagation();
+                // Mostrar modal de advertencia
+                _mostrarAdvertenciaCierre();
+            }
+        });
+
+        // 'hidden.bs.modal' se dispara DESPUÉS de cerrar limpiamente.
+        // Solo llega aquí si no había borrador sucio o si el usuario descartó.
         modalEl.addEventListener('hidden.bs.modal', () => {
-            // Solo limpiar si NO hay cambios sucios (ya confirmados)
-            // Si hay borrador sucio, quedará en sessionStorage para la próxima apertura
             if (!_borrador_sucio) {
                 _limpiarBorrador(_borrador_rowIndex);
             }
+            _borrador_rowIndex = null;
         });
     }
 });
