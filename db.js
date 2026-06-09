@@ -387,7 +387,55 @@ async function exportarPendientes(
 
     URL.revokeObjectURL(url);
 }
+// ═══════════════════════════════════════
+// SYNC LOG LOCAL
+// ═══════════════════════════════════════
+async function sincronizarLogsPendientes() {
 
+    const tx =
+        db.transaction(
+            'logs',
+            'readwrite'
+        );
+
+    const store =
+        tx.objectStore('logs');
+
+    const logs =
+        await new Promise((resolve,reject)=>{
+
+            const req =
+                store.getAll();
+
+            req.onsuccess =
+                () => resolve(req.result);
+
+            req.onerror =
+                reject;
+        });
+
+    for (const log of logs) {
+
+        if (log.syncedLog)
+            continue;
+
+        try {
+
+            await subirLogSheets(log);
+
+            log.syncedLog = true;
+
+            store.put(log);
+
+        } catch(e) {
+
+            console.error(
+                'Error sync log',
+                e
+            );
+        }
+    }
+}
 // ═══════════════════════════════════════
 // REGISTRAR LOG LOCAL
 // ═══════════════════════════════════════
@@ -409,6 +457,9 @@ async function registrarLog(log) {
 
             createdAt:
                 Date.now()
+       
+            syncedLog:
+                log.syncedLog || false
         });
 
         request.onsuccess = () => resolve();
