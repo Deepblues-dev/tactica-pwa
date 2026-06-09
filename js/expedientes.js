@@ -483,7 +483,7 @@ window.guardarCambios = async function () {
         const log = {
             logId          : crypto.randomUUID(),
             fecha,
-            usuario        : localStorage.getItem('usuario') || 'desconocido',
+            usuario        : localStorage.getItem('userEmail') || 'desconocido',
             deviceId       : DEVICE_ID,
             expedienteId   : filaNueva[0],
             campo          : `UPDATE (${camposModificados.length} campos)`,
