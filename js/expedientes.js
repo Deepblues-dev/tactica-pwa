@@ -215,41 +215,43 @@ window.abrirEditor = function (index) {
         return;
     }
 
-    const fila = App.rawData[index];
+    const fila      = App.rawData[index];
     const targetRow = index + 1;
+
     console.log('[editar] abrirEditor', { index, targetRow, expediente: fila[1], expedienteId: fila[0] });
-    document.getElementById('edit-row-index').value      = targetRow;
+
+    // Guardar índice y datos originales
+    document.getElementById('edit-row-index').value = targetRow;
     mostrarSheetRow(targetRow);
-    document.getElementById('edit-nota').value           = fila[24] || '';
-    document.getElementById('edit-ubicacion').value      = fila[22] || '';
-    document.getElementById('edit-estado').value         = fila[11] || '';
-    document.getElementById('edit-termino').value        = fila[20] || '';
-    document.getElementById('edit-pendientes').value     = fila[19] || '';
-    document.getElementById('edit-observaciones').value  = fila[18] || '';
-    document.getElementById('tipo-revision').value       = '';
 
+    // ── Mostrar número de expediente como título fijo ──
+    const tituloEl = document.getElementById('edit-modal-titulo-exp');
+    if (tituloEl) tituloEl.textContent = 'EXP: ' + (fila[1] || '---');
+
+    // ── Poblar TODOS los campos del formulario ─────────
+    document.getElementById('edit-nota').value          = fila[24] || '';
+    document.getElementById('edit-ubicacion').value     = fila[22] || '';
+    document.getElementById('edit-estado').value        = fila[11] || '';
+    document.getElementById('edit-termino').value       = fila[20] || '';
+    document.getElementById('edit-pendientes').value    = fila[19] || '';
+    document.getElementById('edit-observaciones').value = fila[18] || '';
+    document.getElementById('edit-relacionado').value   = fila[9]  || '';
+    document.getElementById('edit-piezas').value        = fila[10] || '';
+    document.getElementById('edit-recursos').value      = fila[15] || '';
+    document.getElementById('edit-sentencia').value     = fila[16] || '';
+    document.getElementById('edit-autorizados').value   = fila[17] || '';
+    document.getElementById('tipo-revision').value      = '';
+
+    // ── Visibilidad por capa ───────────────────────────
     const publicMode = estaPublico();
-    const fullEdit   = puedeEditarCompleto();
+    const camposPrivados = ['campo-termino', 'campo-pendientes', 'campo-observaciones',
+                            'row-private-mobile-fields', 'campo-estado'];
+    camposPrivados.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = publicMode ? 'none' : '';
+    });
 
-    // El toggle de edición completa fue eliminado de la UI; dejar control
-    // del modo completo solo para acceso PC con token (reserva).
-
-    // En modo público, ocultar todos los campos excepto Nota y Ubicación
-    if (publicMode) {
-        const camposOcultar = ['campo-termino', 'campo-pendientes', 'campo-observaciones', 'row-private-mobile-fields', 'campo-estado'];
-        camposOcultar.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-        });
-    } else {
-        // Mostrar campos en modo privado-móvil
-        const camposMostrar = ['campo-termino', 'campo-pendientes', 'campo-observaciones', 'row-private-mobile-fields', 'campo-estado'];
-        camposMostrar.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = '';
-        });
-    }
-
+    // ── Edición completa (reservada) ───────────────────
     const cont = document.getElementById('contenedor-edicion-completa');
     cont.innerHTML = '';
     COLUMNAS.forEach((nombre, i) => {
@@ -261,9 +263,15 @@ window.abrirEditor = function (index) {
             </div>`;
     });
 
-    // Mostrar siempre modo-simple (la edición completa está reservada)
-    document.getElementById('modo-simple').style.display = 'block';
+    document.getElementById('modo-simple').style.display   = 'block';
     document.getElementById('modo-completo').style.display = 'none';
+
+    // ── Guardar borrador en sessionStorage ─────────────
+    // Se activa al detectar cambios en los campos (ver listeners abajo)
+    _borrador_rowIndex = targetRow;
+    _borrador_sucio    = false;
+    _restaurarBorradorSiExiste(targetRow);
+
     if (modalEdit) modalEdit.show();
 };
 
@@ -335,6 +343,10 @@ window.guardarCambios = async function () {
             return;
         }
 
+        // ── Declarar filaNueva y updates (bug fix — faltaban) ──
+        const filaNueva = [...filaOriginal];
+        const updates   = [];
+
         const expedienteId = filaOriginal[0];
         let sheetRow = rowIndex > 1 ? rowIndex : null;
         if (!sheetRow && expedienteId) {
@@ -344,12 +356,12 @@ window.guardarCambios = async function () {
 
         if (!sheetRow) {
             toast('No se pudo determinar la fila de hoja para el expediente.', 'error');
-                mostrarSheetRow(null);
-                restaurarBoton();
-                return;
-            }
+            mostrarSheetRow(null);
+            restaurarBoton();
+            return;
+        }
 
-            mostrarSheetRow(sheetRow);
+        mostrarSheetRow(sheetRow);
 
         function pushUpdate(col, value) {
             const index = col.charCodeAt(0) - 65;
@@ -400,6 +412,20 @@ window.guardarCambios = async function () {
         }
 
         const camposModificados = cambiosReales.map(u => COLUMNAS[u.col.charCodeAt(0) - 65]);
+
+        // ── Ventana de confirmación ────────────────────────
+        const confirmado = await mostrarConfirmacionCambios({
+            expediente    : filaOriginal[1],
+            cambiosReales,
+            camposModificados,
+            filaOriginal,
+            filaNueva
+        });
+        if (!confirmado) {
+            toast('Cambios cancelados.', 'warning', 2000);
+            restaurarBoton();
+            return;
+        }
 
         const logBase = {
             expediente  : filaNueva[1],
@@ -502,6 +528,10 @@ window.guardarCambios = async function () {
             toast('Expediente actualizado.', 'success');
         }
 
+        // ── Limpiar borrador al guardar exitosamente ──
+        _limpiarBorrador(_borrador_rowIndex);
+        _borrador_sucio = false;
+
         if (modalEdit) modalEdit.hide();
         window.aplicarFiltroFinal();
 
@@ -512,3 +542,202 @@ window.guardarCambios = async function () {
         restaurarBoton();
     }
 };
+
+
+// ════════════════════════════════════════════════════════════
+// SISTEMA DE BORRADOR — guarda cambios no confirmados
+// Persiste en sessionStorage para sobrevivir cambio de foco,
+// pérdida de conexión o cambio de aplicación.
+// Se limpia solo cuando el usuario confirma el guardado.
+// ════════════════════════════════════════════════════════════
+
+let _borrador_rowIndex = null;
+let _borrador_sucio    = false;
+
+const BORRADOR_CAMPOS = [
+    'edit-nota', 'edit-ubicacion', 'edit-estado',
+    'edit-termino', 'edit-pendientes', 'edit-observaciones',
+    'edit-relacionado', 'edit-piezas', 'edit-recursos',
+    'edit-sentencia', 'edit-autorizados', 'tipo-revision'
+];
+
+// Guardar borrador en sessionStorage
+function _guardarBorrador(rowIndex) {
+    if (!rowIndex) return;
+    const datos = {};
+    BORRADOR_CAMPOS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) datos[id] = el.value;
+    });
+    sessionStorage.setItem('borrador_' + rowIndex, JSON.stringify(datos));
+    _borrador_sucio = true;
+}
+
+// Restaurar borrador si existe
+function _restaurarBorradorSiExiste(rowIndex) {
+    const raw = sessionStorage.getItem('borrador_' + rowIndex);
+    if (!raw) return;
+    try {
+        const datos = JSON.parse(raw);
+        let restaurado = false;
+        BORRADOR_CAMPOS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && datos[id] !== undefined) {
+                el.value = datos[id];
+                restaurado = true;
+            }
+        });
+        if (restaurado) {
+            toast('Se restauró un borrador no guardado.', 'warning', 5000);
+            _borrador_sucio = true;
+        }
+    } catch (e) {
+        console.warn('Error restaurando borrador:', e);
+    }
+}
+
+// Limpiar borrador
+function _limpiarBorrador(rowIndex) {
+    if (!rowIndex) return;
+    sessionStorage.removeItem('borrador_' + rowIndex);
+    _borrador_sucio = false;
+}
+
+// Activar guardado automático de borrador al escribir en cualquier campo
+document.addEventListener('DOMContentLoaded', () => {
+    BORRADOR_CAMPOS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+            if (_borrador_rowIndex) _guardarBorrador(_borrador_rowIndex);
+        });
+    });
+
+    // Al cerrar el modal sin guardar: conservar borrador (no limpiarlo)
+    const modalEl = document.getElementById('modalEditar');
+    if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            // Solo limpiar si NO hay cambios sucios (ya confirmados)
+            // Si hay borrador sucio, quedará en sessionStorage para la próxima apertura
+            if (!_borrador_sucio) {
+                _limpiarBorrador(_borrador_rowIndex);
+            }
+        });
+    }
+});
+
+// Guardar borrador si el usuario cambia de ventana/app (pierde foco)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && _borrador_rowIndex && _borrador_sucio) {
+        _guardarBorrador(_borrador_rowIndex);
+        console.log('[borrador] Guardado al perder foco — rowIndex:', _borrador_rowIndex);
+    }
+});
+
+window.addEventListener('blur', () => {
+    if (_borrador_rowIndex && _borrador_sucio) {
+        _guardarBorrador(_borrador_rowIndex);
+    }
+});
+
+// ════════════════════════════════════════════════════════════
+// VENTANA DE CONFIRMACIÓN DE CAMBIOS
+// Muestra los campos modificados con valor anterior y nuevo.
+// Devuelve Promise<boolean> — true si el usuario confirma.
+// ════════════════════════════════════════════════════════════
+
+function mostrarConfirmacionCambios({ expediente, cambiosReales, camposModificados, filaOriginal, filaNueva }) {
+    return new Promise(resolve => {
+
+        // Construir tabla de cambios
+        const filas = cambiosReales.map(u => {
+            const idx       = u.col.charCodeAt(0) - 65;
+            const nombre    = COLUMNAS[idx] || u.col;
+            const anterior  = (filaOriginal[idx] || '').toString().substring(0, 80) || '—';
+            const nuevo     = (u.value || '').toString().substring(0, 80) || '—';
+            return `
+                <tr>
+                    <td style="font-weight:600;padding:6px 10px;white-space:nowrap;">${nombre}</td>
+                    <td style="padding:6px 10px;color:#888;font-size:0.85em;">${anterior}</td>
+                    <td style="padding:6px 10px;color:#1d3557;font-size:0.85em;">${nuevo}</td>
+                </tr>`;
+        }).join('');
+
+        const html = `
+        <div id="modal-confirmacion" style="
+            position:fixed; inset:0; z-index:99999;
+            background:rgba(0,0,0,0.6);
+            display:flex; align-items:center; justify-content:center;
+            padding:16px;
+        ">
+            <div style="
+                background:#fff; border-radius:12px; max-width:680px; width:100%;
+                max-height:80vh; overflow-y:auto;
+                box-shadow:0 8px 32px rgba(0,0,0,0.3);
+            ">
+                <!-- Header -->
+                <div style="
+                    background:#1d3557; color:#fff;
+                    padding:16px 20px; border-radius:12px 12px 0 0;
+                    display:flex; justify-content:space-between; align-items:center;
+                ">
+                    <div>
+                        <div style="font-weight:700;font-size:1rem;">Confirmar cambios</div>
+                        <div style="font-size:0.8rem;opacity:0.8;">EXP: ${expediente || '---'}</div>
+                    </div>
+                    <span style="
+                        background:#c8a951; color:#1d3557;
+                        padding:3px 10px; border-radius:20px;
+                        font-size:0.75rem; font-weight:700;
+                    ">${cambiosReales.length} campo${cambiosReales.length !== 1 ? 's' : ''}</span>
+                </div>
+
+                <!-- Tabla de cambios -->
+                <div style="padding:16px 20px;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                        <thead>
+                            <tr style="border-bottom:2px solid #eee;">
+                                <th style="padding:6px 10px;text-align:left;color:#666;">Campo</th>
+                                <th style="padding:6px 10px;text-align:left;color:#666;">Valor anterior</th>
+                                <th style="padding:6px 10px;text-align:left;color:#1d3557;">Valor nuevo</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filas}</tbody>
+                    </table>
+                </div>
+
+                <!-- Botones -->
+                <div style="
+                    padding:12px 20px 20px;
+                    display:flex; justify-content:flex-end; gap:10px;
+                    border-top:1px solid #eee;
+                ">
+                    <button id="btn-conf-cancelar" style="
+                        padding:10px 20px; border:none; border-radius:8px;
+                        background:#adb5bd; color:#fff; cursor:pointer; font-weight:600;
+                    ">Cancelar</button>
+                    <button id="btn-conf-confirmar" style="
+                        padding:10px 24px; border:none; border-radius:8px;
+                        background:#1d3557; color:#fff; cursor:pointer; font-weight:700;
+                    ">Confirmar y guardar</button>
+                </div>
+            </div>
+        </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', html);
+
+        const modal    = document.getElementById('modal-confirmacion');
+        const btnOk    = document.getElementById('btn-conf-confirmar');
+        const btnCan   = document.getElementById('btn-conf-cancelar');
+
+        const limpiar = () => modal.remove();
+
+        btnOk.addEventListener('click', () => { limpiar(); resolve(true);  });
+        btnCan.addEventListener('click', () => { limpiar(); resolve(false); });
+
+        // Click fuera del panel = cancelar
+        modal.addEventListener('click', e => {
+            if (e.target === modal) { limpiar(); resolve(false); }
+        });
+    });
+}
