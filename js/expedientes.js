@@ -187,7 +187,7 @@ window.nuevoExpediente = async function () {
             versionNueva   : fechaLog,
             modo           : 'ONLINE',
             estado         : 'SYNCED',
-            hash           : '',
+            hash           : hash,
             nivelAcceso    : 'PRIVADA_MÓVIL',          
             
         };
@@ -541,12 +541,24 @@ for (const cambio of cambiosReales) {
 
         hash,
 
-        nivelAcceso:
-            publicMode
-                ? 'PUBLICO'
-                : 'PRIVADA_MOVIL'
-                : 'PC'
-                : 'ADMIN'
+       nivelAcceso: (() => {
+
+    if (publicMode) {
+        return 'PUBLICO';
+    }
+
+    const esDispositivoMovil =
+        /Android|iPhone|iPad|iPod/i.test(
+            navigator.userAgent
+        );
+
+    if (esDispositivoMovil) {
+        return 'PRIVADA_MOVIL';
+    }
+
+    return 'PC';
+
+})()
     });
 }
 
