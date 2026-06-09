@@ -169,7 +169,7 @@ window.nuevoExpediente = async function () {
             campos     : ['NUEVO_EXPEDIENTE'],
             fecha      : fechaLog,
             modo       : 'ONLINE',
-            capas      : 'PRIVADA_MÓVIL'
+            nivelAcceso: 'PRIVADA_MÓVIL'
         };
         const hash = await generarHash(logBase);
 
@@ -179,15 +179,18 @@ window.nuevoExpediente = async function () {
             usuario        : localStorage.getItem('userEmail') || 'desconocido',
             deviceId       : DEVICE_ID,
             expedienteId   : String(idAsignado),
+            expedienteNum  : nuevaFila[1],
             campo          : 'ALTA',
             valorAnterior  : '',
             valorNuevo     : `Expediente ${nuevaFila[1]} creado`,
             versionAnterior: '',
             versionNueva   : fechaLog,
             modo           : 'ONLINE',
-            capas          : 'PRIVADA_MÓVIL',
+            nivelAcceso    : 'PRIVADA_MÓVIL',
             estado         : 'SYNCED',
-            hash
+            hash           :          ,
+            nivelAcceso    : 'PRIVADA_MOVIL',
+            
         };
 
         // Registrar en IndexedDB y subir a hoja LOGS
@@ -468,34 +471,83 @@ window.guardarCambios = async function () {
             restaurarBoton();
             return;
         }
+const logIdOperacion = crypto.randomUUID();
 
-        const logBase = {
-            expediente  : filaNueva[1],
-            campos      : camposModificados,
-            totalCampos : camposModificados.length,
+const logs = [];
+
+for (const cambio of cambiosReales) {
+
+    const nombreCampo =
+        COLUMNAS[cambio.col.charCodeAt(0) - 65];
+
+    const valorAnterior =
+        filaOriginal[
+            cambio.col.charCodeAt(0) - 65
+        ] || '';
+
+    const logBase = {
+        expediente : filaNueva[1],
+        campo      : nombreCampo,
+        anterior   : valorAnterior,
+        nuevo      : cambio.value,
+        fecha,
+        modo       : navigator.onLine
+            ? 'ONLINE'
+            : 'OFFLINE'
+    };
+
+    const hash = await generarHash(logBase);
+
+    logs.push({
+
+        logId: logIdOperacion,
+
+        fecha,
+
+        usuario:
+            localStorage.getItem('userEmail')
+            || 'desconocido',
+
+        deviceId: DEVICE_ID,
+
+        expedienteId:
+            filaNueva[0],
+
+        expedienteNum:
+            filaNueva[1],
+
+        campo:
+            nombreCampo,
+
+        valorAnterior,
+
+        valorNuevo:
+            cambio.value,
+
+        versionAnterior:
+            filaOriginal[21] || '',
+
+        versionNueva:
             fecha,
-            modo        : navigator.onLine ? 'ONLINE' : 'OFFLINE',
-            capas       : publicMode ? 'PÚBLICO' : 'PRIVADA_MÓVIL'
-        };
 
-        const hash = await generarHash(logBase);
+        modo:
+            navigator.onLine
+                ? 'ONLINE'
+                : 'OFFLINE',
 
-        const log = {
-            logId          : crypto.randomUUID(),
-            fecha,
-            usuario        : localStorage.getItem('userEmail') || 'desconocido',
-            deviceId       : DEVICE_ID,
-            expedienteId   : filaNueva[0],
-            campo          : `UPDATE (${camposModificados.length} campos)`,
-            valorAnterior  : '',
-            valorNuevo     : camposModificados.join(', '),
-            versionAnterior: filaOriginal[21] || '',
-            versionNueva   : fecha,
-            modo           : navigator.onLine ? 'ONLINE' : 'OFFLINE',
-            capas          : publicMode ? 'PÚBLICO' : 'PRIVADA_MÓVIL',
-            estado         : navigator.onLine ? 'SYNCED'  : 'PENDING',
-            hash
-        };
+        estado:
+            navigator.onLine
+                ? 'SYNCED'
+                : 'PENDING',
+
+        hash,
+
+        nivelAcceso:
+            publicMode
+                ? 'PUBLICO'
+                : 'PRIVADA_MOVIL'
+    });
+}
 
         // Guardar local siempre
         await actualizarExpedienteLocal(parseInt(filaNueva[0], 10), filaNueva);
@@ -510,7 +562,9 @@ window.guardarCambios = async function () {
                 fecha,  // Timestamp de MODIFICACIÓN (cuando el usuario hizo los cambios)
                 type: 'update'
             });
-            await registrarLog(log);
+            for (const log of logs) {
+    await registrarLog(log);
+}
             programarExportacionPendientes();
             toast('Guardado offline. Pendiente de sincronización.', 'warning', 5000);
         } else {
@@ -565,8 +619,12 @@ window.guardarCambios = async function () {
                 }
             }
 
-            await registrarLog(log);
-            await subirLogSheets(log);
+           for (const log of logs) {
+
+    await registrarLog(log);
+
+    await subirLogSheets(log);
+}
             toast('Expediente actualizado.', 'success');
         }
 
