@@ -18,21 +18,29 @@ async function initDB() {
         request.onupgradeneeded = e => {
 
             db = e.target.result;
-            
-             const logsStore = request.transaction
-    ? request.transaction.objectStore('logs')
-    : null;
-
-if (
-    logsStore &&
-    !logsStore.indexNames.contains('syncedLog')
+            if (
+    db.objectStoreNames.contains('logs')
 ) {
 
-    logsStore.createIndex(
-        'syncedLog',
-        'syncedLog',
-        { unique: false }
-    );
+    const logsStore =
+        request.transaction.objectStore(
+            'logs'
+        );
+
+    if (
+        !logsStore.indexNames.contains(
+            'syncedLog'
+        )
+    ) {
+
+        logsStore.createIndex(
+            'syncedLog',
+            'syncedLog',
+            { unique: false }
+        );
+    }
+}
+           
 }
             // ═══════════════════════════════
             // EXPEDIENTES
