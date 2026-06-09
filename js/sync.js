@@ -57,9 +57,15 @@ async function asegurarToken() {
 async function consultarDatos() {
 
     // Si estamos online, sincronizar cola ANTES de cargar datos remotos
-    if (navigator.onLine && !window.sincronizacionEnProgreso) {
-        await sincronizarPendientes();
-    }
+ if (
+    navigator.onLine &&
+    !window.sincronizacionEnProgreso
+) {
+
+    await sincronizarPendientes();
+
+    await sincronizarLogsPendientes();
+}
 
     if (!navigator.onLine) {
         toast('Modo offline activo', 'warning');
@@ -235,8 +241,21 @@ async function guardarNuevoExpedienteRemoto(expediente) {
 
 // ── Log en Google Sheets ──────────────────────────────────
 async function subirLogSheets(log) {
-    if (!navigator.onLine || !App.accessToken) return;
-    try {
+    if (!navigator.onLine)
+    return;
+
+if (
+    !App.accessToken ||
+    !tokenVigente()
+) {
+
+    const ok =
+        await asegurarToken();
+
+    if (!ok)
+        return;
+}
+     try {
         await fetch(
             `https://sheets.googleapis.com/v4/spreadsheets/${LOG_SHEET_ID}/values/${LOG_SHEET}!A:O:append?valueInputOption=USER_ENTERED`,
             {
@@ -375,7 +394,10 @@ async function sincronizarPendientes() {
             }
         }
 
-        toast('Sincronización completada.', 'success');
+toast('Sincronización completada.', 'success');
+
+// Sincronizar logs pendientes
+await sincronizarLogsPendientes();
 
     } finally {
         sincronizando = false;
@@ -403,10 +425,30 @@ async function exportarPendientesAlCerrar() {
 }
 
 // ── Listeners de conectividad ─────────────────────────────
-window.addEventListener('online', () => {
-    toast('Conexión restaurada', 'success');
-    sincronizarPendientes();
-});
+window.addEventListener(
+    'online',
+    async () => {
+
+        toast(
+            'Conexión restaurada',
+            'success'
+        );
+
+        try {
+
+            await sincronizarPendientes();
+
+            await sincronizarLogsPendientes();
+
+        } catch (e) {
+
+            console.error(
+                'Error sincronizando',
+                e
+            );
+        }
+    }
+);
 
 window.addEventListener('offline', () => {
     toast('Trabajando sin internet', 'warning', 5000);
