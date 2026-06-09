@@ -262,7 +262,7 @@ async function actualizarExpedienteLocal(
 
         const request = store.put({
 
-            id: String(id),
+            id: Number(id),
 
             fila:
                 filaNueva
