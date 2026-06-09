@@ -5,7 +5,7 @@
 
 const CLIENT_ID  = '453700019777-2orvn3rdbepvhq8rdjdi26i548s0t3nq.apps.googleusercontent.com';
 const SHEET_ID   = '1Kxx-zjhGIsF3mnAKs6_e3yZCEHGyauufQ90wzlL2InA';
-const LOG_SHEET  = 'LOGS';
+const LOG_SHEET_ID = '11iQfl6_0CPDVQ2aJgK3xJyynZDyGdMm7iZLRwnl0LkE';
 const PAGE_SIZE  = 20;
 
 const DEVICE_ID = (() => {
