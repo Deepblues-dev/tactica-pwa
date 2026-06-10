@@ -319,7 +319,8 @@ window.abrirEditor = function (index) {
     if (modalEdit) modalEdit.show();
 };
 
-// ── Guardar cambios de edición ────────────────────────────window.guardarCambios = async function () {
+// ── Guardar cambios de edición ────────────────────────────
+window.guardarCambios = async function () {
     // 1. VALIDACIÓN PREVENTIVA DE SESIÓN
     const userEmail = localStorage.getItem('userEmail');
     if (!userEmail) {
