@@ -423,6 +423,25 @@ function programarExportacionPendientes() {
 async function exportarPendientesAlCerrar() {
     try { await exportarPendientes(); } catch (e) {}
 }
+// ------ Await SubirLogs --------
+async function procesarLog(log) {
+    try {
+        // 1. Guardar siempre en local (IndexedDB)
+        await registrarLog(log);
+        
+        // 2. Intentar subir a Sheets solo si hay conexión
+        if (navigator.onLine) {
+            await subirLogSheets(log);
+            // Si funcionó, marcamos como sync en local para no duplicar
+            log.syncedLog = true;
+            await registrarLog(log); 
+        }
+    } catch (e) {
+        console.error('Error al procesar log, quedará pendiente:', e);
+        // Si falla, el log ya está en IndexedDB y será recogido 
+        // por sincronizarLogsPendientes() cuando haya red.
+    }
+}
 
 // ── Listeners de conectividad ─────────────────────────────
 window.addEventListener(
