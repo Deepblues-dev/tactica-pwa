@@ -327,4 +327,4 @@ window.validarCredenciales = function () {
         prompt: 'select_account'
     });
 };
-};
+
