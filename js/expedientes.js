@@ -434,38 +434,28 @@ window.guardarCambios = async function () {
             return;
         }
 
-        // 5. CONFIRMACIÓN Y LOGS
-        const confirmado = await mostrarConfirmacionCambios({
-            expediente: filaOriginal[1],
-            cambiosReales,
-            camposModificados: cambiosReales.map(u => COLUMNAS[u.col.charCodeAt(0) - 65]),
-            filaOriginal,
-            filaNueva
+// 5. CONSTRUCCIÓN DE LOGS CON CREATEDAT (Estructura corregida)
+        const logs = cambiosReales.map(cambio => {
+            // Calculamos el nivel de acceso dentro del mapa
+            const nivel = window.getNivelAcceso(); 
+
+            return {
+                logId: crypto.randomUUID(),
+                createdAt: Date.now(), 
+                fecha: fecha,
+                usuario: userEmail,
+                deviceId: DEVICE_ID || 'PC',
+                expedienteId: filaNueva[0],
+                expedienteNum: filaNueva[1],
+                campo: COLUMNAS[cambio.col.charCodeAt(0) - 65],
+                valorAnterior: filaOriginal[cambio.col.charCodeAt(0) - 65] || '',
+                valorNuevo: cambio.value,
+                modo: navigator.onLine ? 'ONLINE' : 'OFFLINE',
+                estado: navigator.onLine ? 'SYNCED' : 'PENDING',
+                nivelAcceso: nivel, // Aquí usamos la variable calculada
+                hash: '...' // Tu lógica de hash
+            };
         });
-
-        if (!confirmado) {
-            toast('Cambios cancelados.', 'warning', 2000);
-            restaurarBoton();
-            return;
-        }
-
-        // Generar logs con createdAt original
-        const logs = cambiosReales.map(cambio => ({
-            logId: crypto.randomUUID(),
-            createdAt: Date.now(), // <-- AQUÍ EL TIMESTAMP PARA RESOLVER CONFLICTOS
-            fecha: fecha,
-            usuario: userEmail,
-            deviceId: DEVICE_ID || 'PC',
-            expedienteId: filaNueva[0],
-            expedienteNum: filaNueva[1],
-            campo: COLUMNAS[cambio.col.charCodeAt(0) - 65],
-            valorAnterior: filaOriginal[cambio.col.charCodeAt(0) - 65] || '',
-            valorNuevo: cambio.value,
-            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE',
-            estado: navigator.onLine ? 'SYNCED' : 'PENDING',
-            nivelAcceso: window.getNivelAcceso()
-        }));
-
         // 6. GUARDAR (LOCAL + REMOTO)
         await actualizarExpedienteLocal(parseInt(filaNueva[0], 10), filaNueva);
         App.rawData[rowIndex - 1] = filaNueva;
