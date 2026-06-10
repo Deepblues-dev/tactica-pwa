@@ -221,9 +221,11 @@ async function registrarLog(log) {
         const tx = db.transaction('logs', 'readwrite');
         const store = tx.objectStore('logs');
 
+        // Si el log ya trae un createdAt (porque viene de un reintento), 
+        // lo mantenemos. Si no, generamos uno nuevo.
         const request = store.put({
             ...log,
-            createdAt: Date.now(),
+            createdAt: log.createdAt || Date.now(), 
             syncedLog: log.syncedLog || false
         });
 
