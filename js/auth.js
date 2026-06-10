@@ -326,3 +326,5 @@ window.validarCredenciales = function () {
     App.tokenClient.requestAccessToken({
         prompt: 'select_account'
     });
+};
+};
