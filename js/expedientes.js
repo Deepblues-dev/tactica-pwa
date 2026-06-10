@@ -356,41 +356,111 @@ window.guardarCambios = async function () {
             }
         }
 
-        // 4. LÓGICA DE EDICIÓN
-        const rowIndexValue = document.getElementById('edit-row-index').value;
-        const rowIndex      = Number(rowIndexValue);
-        const tipoRevision  = document.getElementById('tipo-revision').value;
-        
-        if (!tipoRevision) {
-            toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
-            restaurarBoton();
-            return;
-        }
+      // 4. LÓGICA DE EDICIÓN
+const rowIndexValue = document.getElementById('edit-row-index').value;
+const rowIndex      = Number(rowIndexValue);
+const tipoRevision  = document.getElementById('tipo-revision').value;
 
-        const filaOriginal = App.rawData[rowIndex - 1];
-        if (!filaOriginal) {
-            toast('No se encontró la fila a actualizar.', 'error');
-            restaurarBoton();
-            return;
-        }
+if (!tipoRevision) {
+    toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
+    restaurarBoton();
+    return;
+}
 
-        // --- AQUÍ CONSTRUYES TU OBJETO LOG USANDO LA FUNCIÓN CENTRALIZADA ---
-        const log = {
-            logId: crypto.randomUUID(),
-            fecha: new Date().toLocaleString('es-MX'),
-            usuario: userEmail,
-            deviceId: localStorage.getItem('deviceId') || 'PC',
-            expedienteId: filaOriginal[0],
-            expedienteNum: filaOriginal[1],
-            campo: 'General', // O el campo específico que detectes
-            valorAnterior: 'N/A', // Aquí iría tu lógica de comparación
-            valorNuevo: tipoRevision,
-            nivelAcceso: window.getNivelAcceso(),
-            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE',
-            estado: 'PENDIENTE',
-            hash: '...' // Tu lógica de hash
-        };
+const filaOriginal = App.rawData[rowIndex - 1];
+if (!filaOriginal) {
+    toast('No se encontró la fila a actualizar.', 'error');
+    restaurarBoton();
+    return;
+}
 
+// ── MAPEO DE CAMPOS EDITABLES A ÍNDICES DE COLUMNA ──
+const camposEditables = {
+    'edit-nota': 24,
+    'edit-ubicacion': 22,
+    'edit-estado': 11,
+    'edit-termino': 20,
+    'edit-pendientes': 19,
+    'edit-observaciones': 18,
+    'edit-relacionado': 9,
+    'edit-piezas': 10,
+    'edit-recursos': 15,
+    'edit-sentencia': 16,
+    'edit-autorizados': 17,
+    'tipo-revision': 23  // Última_revision
+};
+
+// ── DETECTAR CAMBIOS Y CREAR LOGS ──
+const logId = crypto.randomUUID();  // MISMO PARA TODOS LOS CAMBIOS
+const ahora = new Date();
+const fechaLog = ahora.toLocaleString('es-MX');
+const userEmail = localStorage.getItem('userEmail') || 'desconocido';
+const expedienteId = filaOriginal[0];
+const expedienteNum = filaOriginal[1];
+const nivelAcceso = window.getNivelAcceso();
+
+const logsAGuardar = [];  // Array de logs
+
+// Iterar campos editables y detectar cambios
+for (const [elementId, colIndex] of Object.entries(camposEditables)) {
+    const elemento = document.getElementById(elementId);
+    if (!elemento) continue;
+    
+    const valorNuevo = elemento.value.trim();
+    const valorAnterior = (filaOriginal[colIndex] || '').trim();
+    
+    // Solo crear log si hay cambio
+    if (valorNuevo !== valorAnterior) {
+        const nombreCampo = COLUMNAS[colIndex];
+        
+        const log = {
+            logId: logId,                    // ← MISMO PARA TODOS
+            fecha: fechaLog,
+            usuario: userEmail,
+            deviceId: DEVICE_ID,
+            expedienteId: String(expedienteId),
+            expedienteNum: expedienteNum,
+            campo: nombreCampo,              // ← NOMBRE REAL DEL CAMPO
+            valorAnterior: valorAnterior,    // ← VALOR ORIGINAL
+            valorNuevo: valorNuevo,          // ← VALOR NUEVO
+            versionAnterior: filaOriginal[21] || '',  // Última_Modificacion anterior
+            versionNueva: fechaLog,                    // Nueva fecha de modificación
+            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE',
+            estado: 'PENDIENTE',
+            hash: '...',  // Se calcula después
+            nivelAcceso: nivelAcceso
+        };
+        
+        logsAGuardar.push(log);
+    }
+}
+
+// Si no hay cambios, notificar y salir
+if (logsAGuardar.length === 0) {
+    toast('No hay cambios para guardar.', 'info');
+    restaurarBoton();
+    return;
+}
+
+// ── GUARDAR TODOS LOS LOGS (mismo logId, agrupados) ──
+for (const log of logsAGuardar) {
+    try {
+        await procesarLog(log);
+    } catch (e) {
+        console.error('Error guardando log para campo ' + log.campo, e);
+    }
+}
+
+// 5. Aquí iría tu lógica de actualizar en Sheets...
+// await actualizarEnSheets(updates);
+// await guardarExpedientesLocal(App.rawData);
+
+const estaOnline = navigator.onLine;
+toast(
+    `Guardados ${logsAGuardar.length} cambios. ` + 
+    (estaOnline ? 'Sincronizados.' : 'Se sincronizarán al conectar.'),
+    estaOnline ? 'success' : 'warning'
+);
         // 5. PROCESAR LOG Y GUARDAR CAMBIOS
         await procesarLog(log); 
         
