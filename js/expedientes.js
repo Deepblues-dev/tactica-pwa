@@ -321,6 +321,11 @@ window.abrirEditor = function (index) {
 
 // ── Guardar cambios de edición ────────────────────────────
 window.guardarCambios = async function () {
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail) {
+        toast('Sesión inválida. Por favor, vuelve a iniciar sesión.', 'error');
+        return;
+    }
 
     const btnGuardar = document.getElementById('btn-guardar');
     const btnTexto   = document.getElementById('btn-guardar-txt');
