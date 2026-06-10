@@ -455,11 +455,11 @@ for (const log of logsAGuardar) {
 // await actualizarEnSheets(updates);
 // await guardarExpedientesLocal(App.rawData);
 
-const estaOnline = navigator.onLine;
+const _estaOnline = navigator.onLine;
 toast(
     `Guardados ${logsAGuardar.length} cambios. ` + 
-    (estaOnline ? 'Sincronizados.' : 'Se sincronizarán al conectar.'),
-    estaOnline ? 'success' : 'warning'
+    (_estaOnline ? 'Sincronizados.' : 'Se sincronizarán al conectar.'),
+    _estaOnline ? 'success' : 'warning'
 );
         // 5. PROCESAR LOG Y GUARDAR CAMBIOS
         await procesarLog(log); 
