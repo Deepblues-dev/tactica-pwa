@@ -319,7 +319,8 @@ window.abrirEditor = function (index) {
     if (modalEdit) modalEdit.show();
 };
 
-// ── Guardar cambios de edición ────────────────────────────window.guardarCambios = async function () {
+// ── Guardar cambios de edición ────────────────────────────
+window.guardarCambios = async function () {
     // 1. VALIDACIÓN PREVENTIVA DE SESIÓN
     const userEmail = localStorage.getItem('userEmail');
     if (!userEmail) {
@@ -327,18 +328,18 @@ window.abrirEditor = function (index) {
         return;
     }
 
-    // 2. PREPARACIÓN DE BOTONES (UI)
+    // 2. CONFIGURACIÓN UI BOTONES
     const btnGuardar = document.getElementById('btn-guardar');
     const btnTexto   = document.getElementById('btn-guardar-txt');
     const btnSpinner = document.getElementById('btn-guardar-spin');
 
     const restaurarBoton = () => {
-        btnGuardar.disabled  = false;
+        btnGuardar.disabled = false;
         btnTexto.textContent = 'Guardar';
         btnSpinner.style.display = 'none';
     };
 
-    btnGuardar.disabled  = true;
+    btnGuardar.disabled = true;
     btnTexto.textContent = 'Guardando...';
     btnSpinner.style.display = 'inline-block';
 
@@ -354,11 +355,10 @@ window.abrirEditor = function (index) {
             }
         }
 
-        // 4. LÓGICA DE EDICIÓN
         const rowIndexValue = document.getElementById('edit-row-index').value;
-        const rowIndex      = Number(rowIndexValue);
-        const tipoRevision  = document.getElementById('tipo-revision').value;
-        
+        const rowIndex = Number(rowIndexValue);
+        const tipoRevision = document.getElementById('tipo-revision').value;
+
         if (!tipoRevision) {
             toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
             restaurarBoton();
@@ -372,123 +372,19 @@ window.abrirEditor = function (index) {
             return;
         }
 
-        // --- AQUÍ CONSTRUYES TU OBJETO LOG USANDO LA FUNCIÓN CENTRALIZADA ---
-        const log = {
-            logId: crypto.randomUUID(),
-            fecha: new Date().toLocaleString('es-MX'),
-            usuario: userEmail,
-            deviceId: localStorage.getItem('deviceId') || 'PC',
-            expedienteId: filaOriginal[0],
-            expedienteNum: filaOriginal[1],
-            campo: 'General', // O el campo específico que detectes
-            valorAnterior: 'N/A', // Aquí iría tu lógica de comparación
-            valorNuevo: tipoRevision,
-            nivelAcceso: window.getNivelAcceso(),
-            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE',
-            estado: 'PENDIENTE',
-            hash: '...' // Tu lógica de hash
-        };
-
-        // 5. PROCESAR LOG Y GUARDAR CAMBIOS
-        await procesarLog(log); 
-        
-        // ... (Aquí iría el resto de tu lógica para actualizar filaNueva y aplicar updates) ...
-
-        const estaOnline = navigator.onLine;
-        toast(estaOnline ? 'Cambios guardados y sincronizados.' : 'Guardado localmente. Se sincronizará al recuperar internet.', estaOnline ? 'success' : 'warning');
-        
-    } catch (error) {
-        console.error(error);
-        toast('Error al guardar: ' + error.message, 'error');
-    } finally {
-        restaurarBoton();
-    }
-};
-
-    const btnGuardar = document.getElementById('btn-guardar');
-    const btnTexto   = document.getElementById('btn-guardar-txt');
-    const btnSpinner = document.getElementById('btn-guardar-spin');
-
-    const restaurarBoton = () => {
-        btnGuardar.disabled  = false;
-        btnTexto.textContent = 'Guardar';
-        btnSpinner.style.display = 'none';
-    };
-
-    btnGuardar.disabled  = true;
-    btnTexto.textContent = 'Guardando...';
-    btnSpinner.style.display = 'inline-block';
-
-    try {
-        // Validación de sesión — renovar si expiró (dentro del gesto del usuario)
-        if (navigator.onLine && (!App.accessToken || !tokenVigente())) {
-            toast('Renovando sesión...', 'warning', 3000);
-            const ok = await asegurarToken();
-            if (!ok) {
-                toast('Sesión expirada. Vuelve a ingresar.', 'warning');
-                restaurarBoton();
-                return;
-            }
-        }
-
-        const rowIndexValue = document.getElementById('edit-row-index').value;
-        const rowIndex      = Number(rowIndexValue);
-        const tipoRevision  = document.getElementById('tipo-revision').value;
-
-        console.log('[editar] guardarCambios', {
-            rowIndexValue,
-            rowIndex,
-            tipoRevision,
-            nota: document.getElementById('edit-nota').value,
-            ubicacion: document.getElementById('edit-ubicacion').value,
-            publicMode: estaPublico()
-        });
-
-        if (!tipoRevision) {
-            toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
-            restaurarBoton();
-            return;
-        }
-
-        // Edición completa quedó reservada para acceso PC+token y no hay
-        // control UI para activarla por ahora. Forzar a false aquí.
-        const completo = (puedeEditarCompleto() && false);
-
+        // 4. PREPARAR ACTUALIZACIONES
         const ahora = new Date();
-        const fecha =
-            String(ahora.getDate()).padStart(2, '0')    + '/' +
-            String(ahora.getMonth() + 1).padStart(2, '0') + '/' +
-            ahora.getFullYear() + ' ' +
-            String(ahora.getHours()).padStart(2, '0')   + ':' +
-            String(ahora.getMinutes()).padStart(2, '0') + ':' +
-            String(ahora.getSeconds()).padStart(2, '0');
-
-        const filaOriginal = App.rawData[rowIndex - 1];
-        if (!filaOriginal) {
-            toast('No se encontró la fila a actualizar.', 'error');
-            restaurarBoton();
-            return;
-        }
-
-        // ── Declarar filaNueva y updates (bug fix — faltaban) ──
+        const fecha = ahora.toLocaleString('es-MX');
         const filaNueva = [...filaOriginal];
-        const updates   = [];
-
-        const expedienteId = filaOriginal[0];
+        const updates = [];
+        
         let sheetRow = rowIndex > 1 ? rowIndex : null;
-        if (!sheetRow && expedienteId) {
-            const found = App.rawData.findIndex(r => String(r[0]) === String(expedienteId));
-            if (found >= 1) sheetRow = found;
+        if (!sheetRow && filaOriginal[0]) {
+            const found = App.rawData.findIndex(r => String(r[0]) === String(filaOriginal[0]));
+            if (found >= 1) sheetRow = found + 1;
         }
 
-        if (!sheetRow) {
-            toast('No se pudo determinar la fila de hoja para el expediente.', 'error');
-            mostrarSheetRow(null);
-            restaurarBoton();
-            return;
-        }
-
-        mostrarSheetRow(sheetRow);
+        if (!sheetRow) throw new Error('No se pudo determinar la fila objetivo.');
 
         function pushUpdate(col, value) {
             const index = col.charCodeAt(0) - 65;
@@ -496,26 +392,26 @@ window.abrirEditor = function (index) {
             updates.push({ col, value });
         }
 
+        // Lógica de campos (modo simple vs completo)
+        const completo = (puedeEditarCompleto() && false); // Forzamos false según tu lógica
         const publicMode = estaPublico();
 
         if (!completo) {
             if (publicMode) {
-                // MODO PÚBLICO: solo Nota Rápida (Y) y Ubicación del Expediente (W)
                 pushUpdate('Y', document.getElementById('edit-nota').value);
                 pushUpdate('W', document.getElementById('edit-ubicacion').value);
             } else {
-                // MODO PRIVADA MOVIL: todos los campos de la tabla
                 pushUpdate('Y', document.getElementById('edit-nota').value);
-                pushUpdate('J', document.getElementById('edit-relacionado')?.value || ''); // 9
-                pushUpdate('K', document.getElementById('edit-piezas')?.value || '');      //10
-                pushUpdate('L', document.getElementById('edit-estado').value);            //11
-                pushUpdate('P', document.getElementById('edit-recursos')?.value || '');    //15
-                pushUpdate('Q', document.getElementById('edit-sentencia')?.value || '');   //16
-                pushUpdate('R', document.getElementById('edit-autorizados')?.value || ''); //17
-                pushUpdate('S', document.getElementById('edit-observaciones').value);      //18
-                pushUpdate('T', document.getElementById('edit-pendientes').value);        //19
-                pushUpdate('U', document.getElementById('edit-termino').value);           //20
-                pushUpdate('W', document.getElementById('edit-ubicacion').value);         //22
+                pushUpdate('J', document.getElementById('edit-relacionado')?.value || '');
+                pushUpdate('K', document.getElementById('edit-piezas')?.value || '');
+                pushUpdate('L', document.getElementById('edit-estado').value);
+                pushUpdate('P', document.getElementById('edit-recursos')?.value || '');
+                pushUpdate('Q', document.getElementById('edit-sentencia')?.value || '');
+                pushUpdate('R', document.getElementById('edit-autorizados')?.value || '');
+                pushUpdate('S', document.getElementById('edit-observaciones').value);
+                pushUpdate('T', document.getElementById('edit-pendientes').value);
+                pushUpdate('U', document.getElementById('edit-termino').value);
+                pushUpdate('W', document.getElementById('edit-ubicacion').value);
             }
         } else {
             document.querySelectorAll('.campo-completo').forEach(el => {
@@ -538,203 +434,73 @@ window.abrirEditor = function (index) {
             return;
         }
 
-        const camposModificados = cambiosReales.map(u => COLUMNAS[u.col.charCodeAt(0) - 65]);
-
-        // ── Ventana de confirmación ────────────────────────
+        // 5. CONFIRMACIÓN Y LOGS
         const confirmado = await mostrarConfirmacionCambios({
-            expediente    : filaOriginal[1],
+            expediente: filaOriginal[1],
             cambiosReales,
-            camposModificados,
+            camposModificados: cambiosReales.map(u => COLUMNAS[u.col.charCodeAt(0) - 65]),
             filaOriginal,
             filaNueva
         });
+
         if (!confirmado) {
             toast('Cambios cancelados.', 'warning', 2000);
             restaurarBoton();
             return;
         }
 
-const logs = [];
+        // Generar logs con createdAt original
+        const logs = cambiosReales.map(cambio => ({
+            logId: crypto.randomUUID(),
+            createdAt: Date.now(), // <-- AQUÍ EL TIMESTAMP PARA RESOLVER CONFLICTOS
+            fecha: fecha,
+            usuario: userEmail,
+            deviceId: DEVICE_ID || 'PC',
+            expedienteId: filaNueva[0],
+            expedienteNum: filaNueva[1],
+            campo: COLUMNAS[cambio.col.charCodeAt(0) - 65],
+            valorAnterior: filaOriginal[cambio.col.charCodeAt(0) - 65] || '',
+            valorNuevo: cambio.value,
+            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE',
+            estado: navigator.onLine ? 'SYNCED' : 'PENDING',
+            nivelAcceso: window.getNivelAcceso()
+        }));
 
-for (const cambio of cambiosReales) {
-
-    const nombreCampo =
-        COLUMNAS[cambio.col.charCodeAt(0) - 65];
-
-    const valorAnterior =
-        filaOriginal[
-            cambio.col.charCodeAt(0) - 65
-        ] || '';
-
-    const logBase = {
-        expediente : filaNueva[1],
-        campo      : nombreCampo,
-        anterior   : valorAnterior,
-        nuevo      : cambio.value,
-        fecha,
-        modo       : navigator.onLine
-            ? 'ONLINE'
-            : 'OFFLINE'
-    };
-
-    const hash = await generarHash(logBase);
-
-    logs.push({
-
-logId: crypto.randomUUID(),
-
-        fecha,
-
-        usuario:
-            localStorage.getItem('userEmail')
-            || 'desconocido',
-
-        deviceId: DEVICE_ID,
-
-        expedienteId:
-            filaNueva[0],
-
-        expedienteNum:
-            filaNueva[1],
-
-        campo:
-            nombreCampo,
-
-        valorAnterior,
-
-        valorNuevo:
-            cambio.value,
-
-        versionAnterior:
-            filaOriginal[21] || '',
-
-        versionNueva:
-            fecha,
-
-        modo:
-            navigator.onLine
-                ? 'ONLINE'
-                : 'OFFLINE',
-
-        estado:
-            navigator.onLine
-                ? 'SYNCED'
-                : 'PENDING',
-
-        hash,
-
-       nivelAcceso: window.getNivelAcceso(),
-
-    const esDispositivoMovil =
-        /Android|iPhone|iPad|iPod/i.test(
-            navigator.userAgent
-        );
-
-    if (esDispositivoMovil) {
-        return 'PRIVADA_MOVIL';
-    }
-
-    return 'PC';
-
-})()
-    });
-}
-
-        // Guardar local siempre
+        // 6. GUARDAR (LOCAL + REMOTO)
         await actualizarExpedienteLocal(parseInt(filaNueva[0], 10), filaNueva);
         App.rawData[rowIndex - 1] = filaNueva;
 
         if (!navigator.onLine) {
-            await agregarCambioQueue({ 
-                rowIndex: sheetRow, 
-                expedienteId: filaNueva[0], 
-                fila: filaNueva, 
-                updates: cambiosReales, 
-                fecha,  // Timestamp de MODIFICACIÓN (cuando el usuario hizo los cambios)
-                type: 'update'
-            });
-            for (const log of logs) {
-    await registrarLog(log);
-}
+            await agregarCambioQueue({ rowIndex: sheetRow, expedienteId: filaNueva[0], fila: filaNueva, updates: cambiosReales, fecha, type: 'update' });
+            for (const log of logs) await registrarLog(log);
             programarExportacionPendientes();
             toast('Guardado offline. Pendiente de sincronización.', 'warning', 5000);
         } else {
-            // Determinar fila objetivo (sheetRow). Usar rowIndex si es válido, sino buscar por expedienteId.
-            let sheetRow = null;
-            if (rowIndex && !isNaN(Number(rowIndex))) {
-                sheetRow = Number(rowIndex);
-            } else if (filaNueva[0]) {
-                const datos = App.rawData.slice(1);
-                const found = datos.findIndex(r => String(r[0]) === String(filaNueva[0]));
-                if (found >= 0) sheetRow = found + 2; // slice[0] == hoja row 2
-            }
-
-            if (!sheetRow) {
-                toast('No se pudo determinar la fila objetivo para la actualización remota.', 'error', 6000);
-                console.error('[editar] sheetRow no determinado', { rowIndex, expedienteId: filaNueva[0], filaNueva });
-                restaurarBoton();
-                return;
-            }
-
-            console.log('[editar] actualizando remota', { sheetRow, cambiosReales });
-
             for (const u of cambiosReales) {
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${sheetRow}?valueInputOption=USER_ENTERED`,
-                    {
-                        method : 'PUT',
-                        headers: {
-                            'Authorization': 'Bearer ' + App.accessToken,
-                            'Content-Type' : 'application/json'
-                        },
-                        body: JSON.stringify({ values: [[u.value]] })
-                    }
-                );
-
-                if (response.status === 429) {
-                    await new Promise(r => setTimeout(r, 1000));
-                    const retry = await fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${sheetRow}?valueInputOption=USER_ENTERED`,
-                        {
-                            method : 'PUT',
-                            headers: {
-                                'Authorization': 'Bearer ' + App.accessToken,
-                                'Content-Type' : 'application/json'
-                            },
-                            body: JSON.stringify({ values: [[u.value]] })
-                        }
-                    );
-                    if (!retry.ok) throw new Error(`Error Google Sheets ${retry.status}`);
-                } else if (!response.ok) {
-                    throw new Error(`Error Google Sheets ${response.status}`);
-                }
+                await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${sheetRow}?valueInputOption=USER_ENTERED`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + App.accessToken, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ values: [[u.value]] })
+                });
             }
-
-           for (const log of logs) {
-
-    await registrarLog(log);
-
-    await subirLogSheets(log);
-}
+            for (const log of logs) {
+                await registrarLog(log);
+                await subirLogSheets(log);
+            }
             toast('Expediente actualizado.', 'success');
         }
 
-        // ── Limpiar borrador al guardar exitosamente ──
-        _limpiarBorrador(_borrador_rowIndex);
-        _borrador_sucio = false;
-
+        _limpiarBorrador(rowIndex);
         if (modalEdit) modalEdit.hide();
         window.aplicarFiltroFinal();
 
     } catch (e) {
         console.error(e);
-        toast('No se pudo guardar: ' + (e.message || ''), 'error', 7000);
+        toast('No se pudo guardar: ' + e.message, 'error', 7000);
     } finally {
         restaurarBoton();
     }
 };
-
-
 // ════════════════════════════════════════════════════════════
 // ADVERTENCIA AL CERRAR CON BORRADOR SUCIO
 // ════════════════════════════════════════════════════════════
