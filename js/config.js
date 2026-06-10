@@ -82,3 +82,12 @@ const CAPAS = {
     privadaMovil : [2, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
     // privadaDesktop: []  ← Capa 3, implementación futura (P3)
 };
+// Añadir en config.js
+window.getNivelAcceso = function() {
+    if (!tieneAccesoPrivado()) return 'PUBLICO';
+    
+    const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (esMovil) return 'PRIVADA_MOVIL';
+    
+    return 'PC';
+};
