@@ -426,23 +426,28 @@ async function exportarPendientesAlCerrar() {
 // ------ Await SubirLogs --------
 async function procesarLog(log) {
     try {
-        // 1. Guardar siempre en local (IndexedDB)
+        // 1. Asignar fecha original si es la primera vez que se crea
+        if (!log.createdAt) {
+            log.createdAt = Date.now();
+        }
+        
+        // 2. Guardar en local con el createdAt original
         await registrarLog(log);
         
-        // 2. Intentar subir a Sheets solo si hay conexión
+        // 3. Intentar subir a Sheets
         if (navigator.onLine) {
             await subirLogSheets(log);
-            // Si funcionó, marcamos como sync en local para no duplicar
+            
+            // 4. Si fue exitoso, marcamos como sync
             log.syncedLog = true;
+            // Al llamar registrarLog de nuevo, el objeto log ya tiene 
+            // su createdAt original, por lo que se mantiene igual.
             await registrarLog(log); 
         }
     } catch (e) {
         console.error('Error al procesar log, quedará pendiente:', e);
-        // Si falla, el log ya está en IndexedDB y será recogido 
-        // por sincronizarLogsPendientes() cuando haya red.
     }
 }
-
 // ── Listeners de conectividad ─────────────────────────────
 window.addEventListener(
     'online',
