@@ -319,13 +319,91 @@ window.abrirEditor = function (index) {
     if (modalEdit) modalEdit.show();
 };
 
-// ── Guardar cambios de edición ────────────────────────────
-window.guardarCambios = async function () {
+// ── Guardar cambios de edición ────────────────────────────window.guardarCambios = async function () {
+    // 1. VALIDACIÓN PREVENTIVA DE SESIÓN
     const userEmail = localStorage.getItem('userEmail');
     if (!userEmail) {
-        toast('Sesión inválida. Por favor, vuelve a iniciar sesión.', 'error');
+        toast('Error: Sesión no detectada. Por favor, vuelve a iniciar sesión.', 'error');
         return;
     }
+
+    // 2. PREPARACIÓN DE BOTONES (UI)
+    const btnGuardar = document.getElementById('btn-guardar');
+    const btnTexto   = document.getElementById('btn-guardar-txt');
+    const btnSpinner = document.getElementById('btn-guardar-spin');
+
+    const restaurarBoton = () => {
+        btnGuardar.disabled  = false;
+        btnTexto.textContent = 'Guardar';
+        btnSpinner.style.display = 'none';
+    };
+
+    btnGuardar.disabled  = true;
+    btnTexto.textContent = 'Guardando...';
+    btnSpinner.style.display = 'inline-block';
+
+    try {
+        // 3. VALIDACIÓN/RENOVACIÓN DE TOKEN
+        if (navigator.onLine && (!App.accessToken || !tokenVigente())) {
+            toast('Renovando sesión...', 'warning', 3000);
+            const ok = await asegurarToken();
+            if (!ok) {
+                toast('Sesión expirada. Vuelve a ingresar.', 'warning');
+                restaurarBoton();
+                return;
+            }
+        }
+
+        // 4. LÓGICA DE EDICIÓN
+        const rowIndexValue = document.getElementById('edit-row-index').value;
+        const rowIndex      = Number(rowIndexValue);
+        const tipoRevision  = document.getElementById('tipo-revision').value;
+        
+        if (!tipoRevision) {
+            toast('Debes seleccionar FÍSICO o DIGITAL.', 'warning');
+            restaurarBoton();
+            return;
+        }
+
+        const filaOriginal = App.rawData[rowIndex - 1];
+        if (!filaOriginal) {
+            toast('No se encontró la fila a actualizar.', 'error');
+            restaurarBoton();
+            return;
+        }
+
+        // --- AQUÍ CONSTRUYES TU OBJETO LOG USANDO LA FUNCIÓN CENTRALIZADA ---
+        const log = {
+            logId: crypto.randomUUID(),
+            fecha: new Date().toLocaleString('es-MX'),
+            usuario: userEmail,
+            deviceId: localStorage.getItem('deviceId') || 'PC',
+            expedienteId: filaOriginal[0],
+            expedienteNum: filaOriginal[1],
+            campo: 'General', // O el campo específico que detectes
+            valorAnterior: 'N/A', // Aquí iría tu lógica de comparación
+            valorNuevo: tipoRevision,
+            nivelAcceso: window.getNivelAcceso(),
+            modo: navigator.onLine ? 'ONLINE' : 'OFFLINE',
+            estado: 'PENDIENTE',
+            hash: '...' // Tu lógica de hash
+        };
+
+        // 5. PROCESAR LOG Y GUARDAR CAMBIOS
+        await procesarLog(log); 
+        
+        // ... (Aquí iría el resto de tu lógica para actualizar filaNueva y aplicar updates) ...
+
+        const estaOnline = navigator.onLine;
+        toast(estaOnline ? 'Cambios guardados y sincronizados.' : 'Guardado localmente. Se sincronizará al recuperar internet.', estaOnline ? 'success' : 'warning');
+        
+    } catch (error) {
+        console.error(error);
+        toast('Error al guardar: ' + error.message, 'error');
+    } finally {
+        restaurarBoton();
+    }
+};
 
     const btnGuardar = document.getElementById('btn-guardar');
     const btnTexto   = document.getElementById('btn-guardar-txt');
