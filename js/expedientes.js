@@ -169,7 +169,7 @@ window.nuevoExpediente = async function () {
             campos     : ['NUEVO_EXPEDIENTE'],
             fecha      : fechaLog,
             modo       : 'ONLINE',
-            nivelAcceso: 'PC'
+            nivelAcceso: window.getNivelAcceso()
         };
         const hash = await generarHash(logBase);
 
@@ -188,7 +188,7 @@ window.nuevoExpediente = async function () {
             modo           : 'ONLINE',
             estado         : 'SYNCED',
             hash           : hash,
-            nivelAcceso    : 'PC',          
+            nivelAcceso    : window.getNivelAcceso(),          
             
         };
 
@@ -545,11 +545,7 @@ logId: crypto.randomUUID(),
 
         hash,
 
-       nivelAcceso: (() => {
-
-    if (publicMode) {
-        return 'PUBLICO';
-    }
+       nivelAcceso: window.getNivelAcceso(),
 
     const esDispositivoMovil =
         /Android|iPhone|iPad|iPod/i.test(
