@@ -338,12 +338,6 @@ window.guardarCambios = async function () {
         btnTexto.textContent = 'Guardar';
         btnSpinner.style.display = 'none';
     };
-
-    btnGuardar.disabled  = true;
-    btnTexto.textContent = 'Guardando...';
-    btnSpinner.style.display = 'inline-block';
-
-    try {
         // 3. VALIDACIÓN/RENOVACIÓN DE TOKEN
         if (navigator.onLine && (!App.accessToken || !tokenVigente())) {
             toast('Renovando sesión...', 'warning', 3000);
