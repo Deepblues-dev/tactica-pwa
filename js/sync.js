@@ -3,6 +3,17 @@
 // Depende de: config.js, auth.js, db.js
 // ════════════════════════════════════════════════════════════
 
+// ── Generar hash del log para integridad ──────────────────
+async function generarHash(logBase) {
+    const contenido = JSON.stringify(logBase);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(contenido);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex.substring(0, 16); // Primeros 16 caracteres
+}
+
 // ── Renovación lazy de token (dentro de gesto de usuario) ─
 // Usar antes de cualquier operación online que requiera token.
 // Devuelve true si hay token válido al terminar, false si no.
