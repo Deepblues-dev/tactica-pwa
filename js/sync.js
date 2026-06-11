@@ -365,15 +365,18 @@ async function sincronizarPendientes() {
                     );
                 }
 
-                // Determinar fila objetivo en la hoja. Preferir item.rowIndex si es válido,
-                // sino buscar la fila por `expedienteId` en `App.rawData` como respaldo.
+                // Determinar fila objetivo en la hoja buscando siempre por expedienteId
+                // en los datos actuales (ya recargados de Sheets), para evitar que un
+                // rowIndex guardado offline apunte a una fila diferente tras la recarga.
                 let sheetRow = null;
-                if (item.rowIndex && !isNaN(Number(item.rowIndex))) {
-                    sheetRow = Number(item.rowIndex);
-                } else if (item.expedienteId) {
-                    const datos = App.rawData.slice(1); // evitar cabecera
+                if (item.expedienteId && App.rawData.length > 1) {
+                    const datos = App.rawData.slice(1);
                     const found = datos.findIndex(r => String(r[0]) === String(item.expedienteId));
-                    if (found >= 0) sheetRow = found + 2; // slice index -> hoja (slice[0] == hoja row 2)
+                    if (found >= 0) sheetRow = found + 2;
+                }
+                // Solo usar rowIndex como último recurso si no hay expedienteId
+                if (!sheetRow && item.rowIndex && !isNaN(Number(item.rowIndex))) {
+                    sheetRow = Number(item.rowIndex);
                 }
 
                 console.log('[sync] item', { item, sheetRow });
@@ -482,6 +485,22 @@ window.addEventListener(
         );
 
         try {
+            // Primero refrescar App.rawData desde Sheets para que sincronizarPendientes
+            // pueda resolver correctamente el sheetRow por expedienteId
+            if (App.accessToken && tokenVigente()) {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!A:Z`;
+                try {
+                    const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + App.accessToken } });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.values && data.values.length > 1) {
+                            App.rawData = data.values;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[online] No se pudo precargar rawData:', e);
+                }
+            }
 
             await sincronizarPendientes();
 
