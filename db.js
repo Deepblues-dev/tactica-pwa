@@ -191,11 +191,9 @@ async function exportarPendientes(nombre = 'pendientes-sync.json') {
 // SYNC LOG LOCAL
 // ═══════════════════════════════════════
 async function sincronizarLogsPendientes() {
-    const tx = db.transaction('logs', 'readwrite');
-    const store = tx.objectStore('logs');
-
-    const logs = await new Promise((resolve,reject)=>{
-        const req = store.getAll();
+    const logs = await new Promise((resolve, reject) => {
+        const tx = db.transaction('logs', 'readonly');
+        const req = tx.objectStore('logs').getAll();
         req.onsuccess = () => resolve(req.result);
         req.onerror = reject;
     });
@@ -206,7 +204,12 @@ async function sincronizarLogsPendientes() {
         try {
             await subirLogSheets(log);
             log.syncedLog = true;
-            store.put(log);
+            await new Promise((resolve, reject) => {
+                const tx2 = db.transaction('logs', 'readwrite');
+                const req2 = tx2.objectStore('logs').put(log);
+                req2.onsuccess = () => resolve();
+                req2.onerror = reject;
+            });
         } catch(e) {
             console.error('Error sync log', e);
         }
