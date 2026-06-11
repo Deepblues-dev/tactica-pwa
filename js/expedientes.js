@@ -391,7 +391,6 @@ window.guardarCambios = async function () {
         };
 
         // ── DETECTAR CAMBIOS Y CREAR LOGS ──
-        const logId = crypto.randomUUID();  // MISMO PARA TODOS LOS CAMBIOS
         const ahora = new Date();
         const fechaLog = ahora.toLocaleString('es-MX');
         const expedienteId = filaOriginal[0];
@@ -413,7 +412,7 @@ window.guardarCambios = async function () {
                 const nombreCampo = COLUMNAS[colIndex];
                 
                 const log = {
-                    logId: logId,                    // ← MISMO PARA TODOS
+                    logId: crypto.randomUUID(),      // ← UNICO POR CAMPO
                     fecha: fechaLog,
                     usuario: userEmail,
                     deviceId: DEVICE_ID,
@@ -464,63 +463,85 @@ window.guardarCambios = async function () {
 
         // ── ACTUALIZAR DATOS EN GOOGLE SHEETS Y LOCAL ──
         try {
-            // Actualizar filaOriginal en memoria con los nuevos valores
+            // Recopilar los updates detectados (solo campos con cambio)
+            const updates = [];
             for (const [elementId, colIndex] of Object.entries(camposEditables)) {
                 const elemento = document.getElementById(elementId);
-                if (elemento) {
-                    filaOriginal[colIndex] = elemento.value.trim();
+                if (!elemento) continue;
+                const valorNuevo = elemento.value.trim();
+                const valorAnterior = (filaOriginal[colIndex] || '').trim();
+                if (valorNuevo !== valorAnterior) {
+                    updates.push({ col: String.fromCharCode(65 + colIndex), colIndex, value: valorNuevo });
                 }
             }
-            
-            // Actualizar fecha de última modificación
+
+            // Aplicar cambios en memoria
+            for (const u of updates) {
+                filaOriginal[u.colIndex] = u.value;
+            }
             filaOriginal[21] = fechaLog;
-            
-            // Guardar cambios localmente en IndexedDB
-            await guardarExpedientesLocal(App.rawData);
-            
-            // Si está online, sincronizar a Sheets
+
+            // Guardar solo este expediente en IndexedDB (no reescribir toda la tabla)
+            await actualizarExpedienteLocal(filaOriginal[0], filaOriginal);
+
             if (navigator.onLine && App.accessToken && tokenVigente()) {
-                // Actualizar cada campo en Sheets
-                for (const [elementId, colIndex] of Object.entries(camposEditables)) {
-                    const valor = filaOriginal[colIndex];
-                    const colLetra = String.fromCharCode(65 + colIndex); // Convierte índice a letra (A, B, C...)
-                    
+                // Online: escribir directamente en Sheets
+                for (const u of updates) {
                     try {
                         await fetch(
-                            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${colLetra}${rowIndex}?valueInputOption=USER_ENTERED`,
+                            `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!${u.col}${rowIndex}?valueInputOption=USER_ENTERED`,
                             {
                                 method: 'PUT',
                                 headers: {
                                     'Authorization': 'Bearer ' + App.accessToken,
                                     'Content-Type': 'application/json'
                                 },
-                                body: JSON.stringify({ values: [[valor]] })
+                                body: JSON.stringify({ values: [[u.value]] })
                             }
                         );
                     } catch (e) {
-                        console.error(`Error actualizando campo en columna ${colLetra}:`, e);
+                        console.error(`Error actualizando columna ${u.col}:`, e);
                     }
                 }
-                
-                // Recargar datos desde Sheets para sincronizar
+                // Actualizar Ultima_Modificacion
+                await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DB!V${rowIndex}?valueInputOption=USER_ENTERED`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': 'Bearer ' + App.accessToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ values: [[fechaLog]] })
+                    }
+                );
                 await consultarDatos();
+            } else if (!navigator.onLine) {
+                // Offline: encolar cambios para sincronizar al reconectar
+                await agregarCambioQueue({
+                    type        : 'editar_expediente',
+                    expedienteId: String(filaOriginal[0]),
+                    rowIndex    : rowIndex,
+                    updates     : updates.map(u => ({ col: u.col, value: u.value })),
+                    fecha       : fechaLog
+                });
             }
-            
+
             // Limpiar borrador
             _limpiarBorrador(rowIndex);
             _borrador_sucio = false;
-            
+
             // Cerrar modal
             if (modalEdit) modalEdit.hide();
-            
+
             // Notificar éxito
             const _estaOnline = navigator.onLine;
             toast(
-                `Guardados ${logsAGuardar.length} cambios. ` + 
+                `Guardados ${logsAGuardar.length} cambios. ` +
                 (_estaOnline ? 'Sincronizados.' : 'Se sincronizarán al conectar.'),
                 _estaOnline ? 'success' : 'warning'
             );
-            
+
         } catch (e) {
             console.error('Error actualizando datos:', e);
             toast('Error al guardar cambios: ' + e.message, 'error');
