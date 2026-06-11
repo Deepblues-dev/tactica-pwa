@@ -78,6 +78,18 @@ async function consultarDatos() {
     await sincronizarLogsPendientes();
 }
 
+    // Si hay sincronizacion en curso, esperar a que termine antes de recargar de Sheets
+    if (window.sincronizacionEnProgreso) {
+        await new Promise(resolve => {
+            const check = setInterval(() => {
+                if (!window.sincronizacionEnProgreso) {
+                    clearInterval(check);
+                    resolve();
+                }
+            }, 200);
+        });
+    }
+
     if (!navigator.onLine) {
         toast('Modo offline activo', 'warning');
         const datosLocales = await cargarExpedientesLocal();
