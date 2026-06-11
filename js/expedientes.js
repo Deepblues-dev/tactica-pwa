@@ -9,6 +9,26 @@ let modalEdit = null;
 document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('modalEditar');
     if (el) modalEdit = new bootstrap.Modal(el);
+
+    // ── Listeners de borrador: guardar cambios no confirmados ──
+    BORRADOR_CAMPOS.forEach(id => {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+        const evento = (campo.tagName === 'SELECT' || campo.type === 'checkbox') ? 'change' : 'input';
+        campo.addEventListener(evento, () => {
+            if (_borrador_rowIndex) _guardarBorrador(_borrador_rowIndex);
+        });
+    });
+
+    // ── Listener advertencia al cerrar modal con borrador sucio ──
+    if (el) {
+        el.addEventListener('hide.bs.modal', (e) => {
+            if (_borrador_sucio) {
+                e.preventDefault();
+                _mostrarAdvertenciaCierre();
+            }
+        });
+    }
 });
 
 // ── Panel Administrador ──────────────────────────────────
@@ -324,6 +344,13 @@ window.abrirEditor = function (index) {
 window.guardarCambios = async function () {
     // 1. VALIDACIÓN PREVENTIVA DE SESIÓN
     const userEmail = localStorage.getItem('userEmail');
+
+    // En modo público (sin token válido en memoria) y offline no se permite editar
+    if (!navigator.onLine && !tieneAccesoPrivado()) {
+        toast('Sin sesión activa. Conéctate e inicia sesión para guardar cambios.', 'warning', 5000);
+        return;
+    }
+
     if (!userEmail) {
         toast('Error: Sesión no detectada. Por favor, vuelve a iniciar sesión.', 'error');
         return;
